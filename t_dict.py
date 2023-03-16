@@ -95,7 +95,7 @@ print(users)
 
 
 
-# # username,userinfo 相当于 key,value
+# # username,userinfo  key,value
 # for username,userinfo in users.items():
 #     print("username:"+username)
 #     print("userinfo"+str(userinfo))

@@ -8,14 +8,14 @@ def reset(path_ori,path):
     # path = "Hosp_rules_copy"
     # path_ori = "Test"
     # path = "Test_copy"
-    print("重置数据集",path)
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+    print("Resetting the data set",path)
+    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     cursor = conn.cursor()
     # sql= 'INSERT INTO "Hosp_rules_copy1" SELECT * FROM "Hosp_rules" ORDER BY "Provider ID"'
     # sql ='DELETE FROM "Hosp2_rule_copy" '
     sql = "DELETE FROM \"" + path + "\" "
     cursor.execute(sql)
-    conn.commit()   #清空
+    conn.commit()   #Empty
 
     sql1 = "select * from \"" + path_ori + "\" "    #where rownum < 3  #order by "Provider ID" desc
     # print(sql1)
@@ -24,7 +24,7 @@ def reset(path_ori,path):
     # print(data1)
     # data1.reverse()
     # print(type(data1))
-    t2 = len(data1[0])   # 每行数据长度，-1是为了变成索引位置
+    t2 = len(data1[0])   # Length of data per row, -1 is to become index position
 
     #print("1")
     # print(data1)
@@ -48,29 +48,29 @@ def reset(path_ori,path):
         sql4=sql3% (sql_after)
         # print(sql4)
         cursor.execute(sql4)
-        conn.commit()   #重置
+        conn.commit()   #Reset
 
     cursor.close()
     conn.close()
-    print("重置完成")
+    print("Reset complete")
 
 def dict_generator():
     path="Hosp_rules_copy"
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)
     cursor.execute(sql1)
-    data1 = cursor.fetchall()  # 全体数据
+    data1 = cursor.fetchall()  # All data
     des = cursor.description
-    t2 = len(data1[0]) - 1  # 每行数据长度，-1是为了变成索引位置
+    t2 = len(data1[0]) - 1  # Length of data per row, -1 is to become index position
 
     att_name = []
     for item in des:
         att_name.append(item[0])
     # print(att_name)
     dict = {}
-    for i in range(t2):  # -1是为了去掉label列
+    for i in range(t2):  # -1 is to remove the label column
         dict[i] = att_name[i]
     print(dict)
     f = open('data/save/att_name.txt', 'w')

@@ -12,8 +12,8 @@ class Agent(object):
         '''
         # Arguments:
             sess: tf.Session
-            B: int, batch_size        #一次训练所选取的样本数
-            V: int, Vocabrary size      #所有可选取的动作的数量
+            B: int, batch_size        #Number of samples selected for one training session
+            V: int, Vocabrary size      #Number of all selectable actions
             E: int, Embedding size
             H: int, LSTM hidden size
         # Optional Arguments:
@@ -26,7 +26,7 @@ class Agent(object):
         self.E = E
         self.H = H
         self.lr = lr
-        self.eps = 0.1          #随机选择概率
+        self.eps = 0.1          #Random selection probability
         self.generator = Generator(sess, B, V, E, H, lr)
 
     def act(self, state, epsilon=0, deterministic=False):
@@ -38,7 +38,7 @@ class Agent(object):
         # Returns:
             action: numpy array, dtype=int, shape = (B, 1)
         '''
-        word = state[:, -1].reshape([-1, 1])        #[:,-1]取最后一列数据（形状变为一行）；.reshape([-1, 1])将其转为列向量
+        word = state[:, -1].reshape([-1, 1])        # [:,-1] takes the last column of data (the shape becomes a row); .reshape([-1, 1]) converts it to a column vector
         return self._act_on_word(word, epsilon=epsilon, deterministic=deterministic)
 
     def _act_on_word(self, word, epsilon=0, deterministic=False, PAD=0, EOS=2):
@@ -54,17 +54,17 @@ class Agent(object):
         action = None
         is_PAD = word == PAD                                     #ex.[[false][true][false][false]]
         is_EOS = word == EOS                                     #ex.[[false][false][true][false]]
-        is_end = is_PAD.astype(np.int) + is_EOS.astype(np.int)   #既不为pad也不为eos时为0+0 ,ex.[[0][1][1][0]]
-        is_end = 1 - is_end                                      #此时1代表未结束，反之pad或eos时则为0
+        is_end = is_PAD.astype(np.int) + is_EOS.astype(np.int)   #0+0 when neither pad nor eos ,ex.[[0][1][1][0]]
+        is_end = 1 - is_end                                      #At this point 1 means not finished, and vice versa when pad or eos is 0
         is_end = is_end.reshape([self.B, 1])
         if np.random.rand() <= epsilon:
             action = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
         elif not deterministic:
-            probs = self.generator.predict(word)                                #(B, V)，B句话，预测得到每句话中下个词，给出字典中各个词所出现的概率
-            action = self.generator.sampling_word(probs).reshape([self.B, 1])   #按概率选择词
+            probs = self.generator.predict(word)                                #(B, V), sentence B. The prediction gets the next word in each sentence, giving the probability of occurrence of each word in the dictionary
+            action = self.generator.sampling_word(probs).reshape([self.B, 1])   #Selecting words by probability
         else:
             probs = self.generator.predict(word)
-            action = np.argmax(probs, axis=-1).reshape([self.B, 1])   #二维情况下axis=-1与axis=1相同，选择可能性最大的词
+            action = np.argmax(probs, axis=-1).reshape([self.B, 1])   #In the two-dimensional case axis=-1 is the same as axis=1, and the most likely word is chosen
         return action * is_end
 
     def reset(self):
@@ -91,7 +91,7 @@ class Environment(object):
                 params of g_beta.generator should be updated with those of original
                 generator on regular occasions.
         # Optional Arguments
-            n_sample: int, default is 16, the number of Monte Calro search sample
+            n_sample: int, default is 16, the number of Monte Carlo search sample
         '''
         self.data_generator = data_generator
         self.B = data_generator.B
@@ -106,12 +106,12 @@ class Environment(object):
         if self.t == 1:
             return self._state
         else:
-            return self._state[:, 1:]                             #如果当前状态不是初始状态，则将第一列的BOS去掉
+            return self._state[:, 1:]                             #If the current state is not the initial state, remove the BOS from the first column
 
     def reset(self):
         self.t = 1
-        self._state = np.zeros([self.B, 1], dtype=np.int32)       #重置为B行，1列的形式
-        self._state[:, 0] = self.BOS                              #所有行的第0个元素值置为BOS
+        self._state = np.zeros([self.B, 1], dtype=np.int32)       #Reset to row B, column 1 form
+        self._state[:, 0] = self.BOS                              #Set the value of the 0th element of all rows to BOS
         self.g_beta.reset()
 
     def step(self, action):
@@ -142,7 +142,7 @@ class Environment(object):
             # print(self.get_state())
             ids = self.get_state()[i]
             words = [self.data_generator.id2word[id] for id in ids.tolist()]
-            #从这里往下都可以注释掉
+            #You can comment out everything from here on down
             for i in range(len(words)):
                 if (words[i] == None):
                     words[i] = '<UNK>'

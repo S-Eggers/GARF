@@ -24,16 +24,16 @@ class Trainer(object):
         self.generate_samples = generate_samples
         self.g_lr, self.d_lr = g_lr, d_lr
         self.eps = init_eps
-        self.init_eps = init_eps        #探索率ϵ。即策略是以1−ϵ的概率选择当前最大价值的动作，以ϵ的概率随机选择新动作
-        self.top = os.getcwd()          #os.getcwd() 方法用于返回当前工作目录
-        self.path_pos = path_pos        #原始数据所在地址
-        self.path_neg = path_neg        #生成数据所在地址
+        self.init_eps = init_eps        #Exploration rate ϵ. i.e., the strategy is to select the current maximum value action with probability 1-ϵ and to select the new action at random with probability ϵ
+        self.top = os.getcwd()          #The os.getcwd() method is used to return the current working directory
+        self.path_pos = path_pos        #Address where the original data is located
+        self.path_neg = path_neg        #Address where data is generated
         self.path_rules = path_rules
         
-        self.g_data = GeneratorPretrainingGenerator(self.path_pos, order=order, B=B, T=T, min_count=1) # next方法产生x, y_true数据; 都是同一个数据，比如[BOS, 8, 10, 6, 3, EOS]，[8, 10, 6, 3, EOS]
-        self.d_data = DiscriminatorGenerator(path_pos=self.path_pos, order=order, path_neg=self.path_neg, B=self.B, shuffle=True) # next方法产生 pos数据和neg数据
+        self.g_data = GeneratorPretrainingGenerator(self.path_pos, order=order, B=B, T=T, min_count=1) # next method produces x, y_true data; both are the same data, e.g. [BOS, 8, 10, 6, 3, EOS], [8, 10, 6, 3, EOS]
+        self.d_data = DiscriminatorGenerator(path_pos=self.path_pos, order=order, path_neg=self.path_neg, B=self.B, shuffle=True) # The next method produces pos data and neg data
 
-        self.V = self.g_data.V          #数据中词汇总量
+        self.V = self.g_data.V          #Total vocabulary in the data
         self.agent = Agent(sess, B, self.V, g_E, g_H, g_lr)
         self.g_beta = Agent(sess, B, self.V, g_E, g_H, g_lr)
 
@@ -41,11 +41,11 @@ class Trainer(object):
 
         self.env = Environment(self.discriminator, self.g_data, self.g_beta, n_sample=n_sample)
 
-        self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)         #一个4层的神经网络input-embedding-lstm-dense
+        self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)         #A 4-layer neural network input-embedding-lstm-dense
 
         self.rule={}
 
-    def pre_train(self, g_epochs=3, d_epochs=1, g_pre_path=None ,d_pre_path=None, g_lr=1e-3, d_lr=1e-3):        #实际参数由config给出
+    def pre_train(self, g_epochs=3, d_epochs=1, g_pre_path=None ,d_pre_path=None, g_lr=1e-3, d_lr=1e-3):        #The actual parameters are given by the config
         self.pre_train_generator(g_epochs=g_epochs, g_pre_path=g_pre_path, lr=g_lr)
 
         self.pre_train_discriminator(d_epochs=d_epochs, d_pre_path=d_pre_path, lr=d_lr)
@@ -58,19 +58,19 @@ class Trainer(object):
             self.g_pre_path = g_pre_path
 
         g_adam = Adam(lr)
-        self.generator_pre.compile(g_adam, 'categorical_crossentropy')  #进行训练，优化器为Adam，损失函数为分类交叉熵函数，适用于多分类
+        self.generator_pre.compile(g_adam, 'categorical_crossentropy')  #Training is performed, the optimizer is Adam, and the loss function is a categorical cross-entropy function for multi-classification
         print('Generator pre-training')
-        self.generator_pre.summary()            #keras中model.summary()用于输出模型各层的参数状况
+        self.generator_pre.summary()            #model.summary() in keras is used to output the status of the parameters of each layer of the model
         # print("++++++++++++++++++++")
-        self.generator_pre.fit_generator(       #返回值为一个 History 对象。其 History.history 属性是连续 epoch 训练损失和评估值，以及验证集损失和评估值的记录
-            self.g_data,                        #此处应为一个生成器或 Sequence (keras.utils.Sequence) 对象的实例
+        self.generator_pre.fit_generator(       #The return value is a History object. Its History.history property is a record of the training loss and evaluation values for successive epochs, as well as the validation set loss and evaluation values
+            self.g_data,                        #This should be an instance of a generator or Sequence (keras.utils.Sequence) object
             steps_per_epoch=None,
             epochs=g_epochs)
-        self.generator_pre.save_weights(self.g_pre_path)    #保存权重到generator_pre.hdf5
-        self.reflect_pre_train()                #将layer层权重映射给agent
+        self.generator_pre.save_weights(self.g_pre_path)    #Save the weights to generator_pre.hdf5
+        self.reflect_pre_train()                #Mapping layer layer weights to agent
 
     def pre_train_discriminator(self, d_epochs=1, d_pre_path=None, lr=1e-3):
-        print("预训练判别器")
+        print("Pre-training discriminator")
         if d_pre_path is None:
             self.d_pre_path = os.path.join(self.top, 'data', 'save', 'discriminator_pre.hdf5')
         else:
@@ -78,24 +78,24 @@ class Trainer(object):
 
         print('Start Generating sentences')
         self.agent.generator.generate_samples(self.T, self.g_data,
-            self.generate_samples, self.path_neg)      #生成器生成序列，写入output_file位置的txt
+            self.generate_samples, self.path_neg)      #The generator generates a sequence that writes the txt at the output_file location
 
         self.d_data = DiscriminatorGenerator(
-            path_pos=self.path_pos,             #真实数据的采样
+            path_pos=self.path_pos,             #Sampling of real data
             order=self.order,
-            path_neg=self.path_neg,             #读取刚刚生成器生成的数据
+            path_neg=self.path_neg,             #Read the data just generated by the generator
             B=self.B,
             shuffle=True)
 
         d_adam = Adam(lr)
         self.discriminator.compile(d_adam, 'binary_crossentropy')
         self.discriminator.summary()
-        print('Discriminator pre-training')
+        print('Discriminator pre-trainin')
 
         self.discriminator.fit_generator(
             self.d_data,
             steps_per_epoch=None,
-            epochs=d_epochs)
+            epochgs=d_epochs)
         self.discriminator.save(self.d_pre_path)
 
     def load_pre_train(self, g_pre_path, d_pre_path):
@@ -110,12 +110,12 @@ class Trainer(object):
     def load_pre_train_d(self, d_pre_path):
         self.discriminator.load_weights(d_pre_path)
 
-    def reflect_pre_train(self):                        #将layer层权重映射给agent
+    def reflect_pre_train(self):                        #Mapping layer layer weights to agent
         i = 0
         for layer in self.generator_pre.layers:
-            if len(layer.get_weights()) != 0:           #若该层权重不为0
+            if len(layer.get_weights()) != 0:           #If the weight of this layer is not 0
                 w = layer.get_weights()
-                self.agent.generator.layers[i].set_weights(w)       #则将agent中对应层的权重置为w
+                self.agent.generator.layers[i].set_weights(w)       #then the weight of the corresponding layer in agent is set to w
                 self.g_beta.generator.layers[i].set_weights(w)
                 i += 1
 
@@ -124,19 +124,19 @@ class Trainer(object):
         d_weights_path='data/save/discriminator.hdf5',
         verbose=True,
         head=1):
-        print("开始正式训练")
+        print("Start of official training")
         d_adam = Adam(self.d_lr)
         self.discriminator.compile(d_adam, 'binary_crossentropy')
         self.eps = self.init_eps
         for step in range(steps):
-            print("当前整体回合数",step+1)
+            print("Current overall number of rounds",step+1)
             # Generator training
             for _ in range(g_steps):
                 print("G-step")
-                rewards = np.zeros([self.B, self.T])                    #reward建立空表
-                self.agent.reset()                                      #agent重置
-                self.env.reset()                                        #env重置
-                for t in range(self.T):                                 #开始迭代地训练生成器
+                rewards = np.zeros([self.B, self.T])                    #reward creates an empty table
+                self.agent.reset()                                      #agent reset
+                self.env.reset()                                        #env reset
+                for t in range(self.T):                                 #Start iteratively training the generator
                     state = self.env.get_state()
 
                     action = self.agent.act(state, epsilon=0.0)

@@ -6,7 +6,7 @@ def evaluate(path_ori,path):
     # path_ori = "LETTER"
     # path = "LETTER_copy"\
     print("进行评估")
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     cursor = conn.cursor()
 
     sql1 = "select * from \"" + path + "\" where \"Label\"='2' or \"Label\"='3'"    #where rownum < 3  #order by "Provider ID" desc
@@ -19,7 +19,7 @@ def evaluate(path_ori,path):
     for item in des:
         att.append(item[0])
     print(att)
-    t2 = len(data1[0]) - 1  # 每行数据长度，-1是为了变成索引位置
+    t2 = len(data1[0]) - 1  # Length of data per row, -1 is to become index position
 
 
     #print("1")
@@ -43,17 +43,17 @@ def evaluate(path_ori,path):
         print(data_ori)
         if data_ori==[]:
             sql_update = "update \"" + path + "\" set \"Label\"='3'  where  " + sql_info + ""
-            # print("原始：", sql_info)
-            # print("Update信息：", sql_update)
+            # print("Original：", sql_info)
+            # print("Update Information：", sql_update)
             cursor.execute(sql_update)
             conn.commit()
-            # print("目标结果缺失，原始正确数据中无与修复后相同的数据")
+            # print("The target result is missing, the original correct data is not the same as the repaired data")
             # print(sql2)
             error += 1
             continue
         x1=data_ori[0]
         x1=list(x1)[:-1]
-        # print("修复后数据",x1)
+        # print("Post-repair data",x1)
 
         sql3 = "select * from \"" + path + "\" where " + sql_info_label + ""  # where rownum < 3  #order by "Provider ID" desc
         # print(sql3)
@@ -62,12 +62,12 @@ def evaluate(path_ori,path):
         # print(data_new)
         x2 = data_new[0]
         x2 = list(x2)[:-1]
-        # print("修复后数据", x1)
-        # print("正确数据  ",x2)
+        # print("Post-repair data", x1)
+        # print("Correct data  ",x2)
         if x1==x2:
             correct+=1
         else:
-            print("修复错误，修复为", x1,"         实际正确数据为",x2)
+            print("Fix the bug, fix for", x1,"         The actual correct data is",x2)
             error+=1
     precision=1-error/(error+correct)
 
@@ -81,7 +81,7 @@ def evaluate(path_ori,path):
     data2 = cursor.fetchall()
     recall = correct / len(data2)
 
-    print(len(data2),"个错误，修复了",len_update,"个，其中正确数量为",correct,"，错误数量为",error)
+    print(len(data2),"Fixed",len_update,"of which the correct number is",correct,"，The number of errors is",error)
     # print(correct, error, len_update)
     print("precision:", precision)
     print("recall:", recall)
@@ -93,11 +93,11 @@ def evaluate(path_ori,path):
     with open('data/save/log_evaluation.txt', 'a') as f:
         f.write("")
         f.write(str(len(data2)))
-        f.write("个错误，修复了")
+        f.write("Fixed")
         f.write(str(len_update))
-        f.write("个，其中正确数量为")
+        f.write("of which the correct number is")
         f.write(str(correct))
-        f.write("，错误数量为")
+        f.write("，The number of errors is")
         f.write(str(error))
         f.write("precision:")
         f.write(str(precision))

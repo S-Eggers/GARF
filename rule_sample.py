@@ -5,7 +5,7 @@ import os
 def rule_sample(path_rules,path, order):
 
     #rule_test = 'rule_test.txt'
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)
@@ -14,10 +14,10 @@ def rule_sample(path_rules,path, order):
     data_all = [x[:-1] for x in data_all]  # 去掉Label列
 
     if order == 1:
-        print("正序采样数据以生产规则……")
+        print("Positive sequence sampling data to production rules……")
 
     elif order == 0:
-        print("逆序采样数据以生产规则……")
+        print("Inverse order sampling data to production rules……")
         data_all = [x[::-1] for x in data_all]
 
     rule = ''

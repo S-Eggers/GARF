@@ -7,33 +7,33 @@ import cx_Oracle
 
 import code
 
-class Vocab:    #建立词汇库
+class Vocab:    #Building a Vocabulary
     def __init__(self, word2id, unk_token):
-        self.word2id = dict(word2id)                            #建立一个字典
-        self.id2word = {v: k for k, v in self.word2id.items()}  #将字典反向传递给id2word
+        self.word2id = dict(word2id)                            #Create a dictionary
+        self.id2word = {v: k for k, v in self.word2id.items()}  #Reverse pass dictionary to id2word
         self.unk_token = unk_token
 
     def build_vocab(self, sentences, min_count=1):
         word_counter = {}
         for sentence in sentences:
             for word in sentence:
-                word_counter[word] = word_counter.get(word, 0) + 1  #字典类型赋值，其中.get(word,0)+1 是对word出现的频率进行统计
+                word_counter[word] = word_counter.get(word, 0) + 1  #The dictionary type assignment, where .get(word,0)+1 is a count of the frequency of word occurrences
 
-        for word, count in sorted(word_counter.items(), key=lambda x: -x[1]):    #sorted() 函数对所有可迭代的对象进行排序操作,按频率出现的次数从多到少排列
+        for word, count in sorted(word_counter.items(), key=lambda x: -x[1]):    #The sorted() function sorts all iterable objects, sorting them from most frequent to least frequent.
             if count < min_count:
                 break
-            _id = len(self.word2id)     #当前字典大小
-            self.word2id.setdefault(word, _id)  #返回字典中word对应的值，即当前句子中word的出现次数，若不存在则返回_id
+            _id = len(self.word2id)     #Current dictionary size
+            self.word2id.setdefault(word, _id)  #Returns the value corresponding to the word in the dictionary, i.e. the number of occurrences of the word in the current sentence, or _id if it does not exist
             self.id2word[_id] = word
 
-        self.raw_vocab = {w: word_counter[w] for w in self.word2id.keys() if w in word_counter} #字典合集{每个词：对应id}
+        self.raw_vocab = {w: word_counter[w] for w in self.word2id.keys() if w in word_counter} #Dictionary Collection {each word: corresponding id}
 
     def sentence_to_ids(self, sentence):
         return [self.word2id[word] if word in self.word2id else self.word2id[self.unk_token] for word in sentence]
 
 def load_data(path, order):
 
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)
@@ -43,10 +43,10 @@ def load_data(path, order):
     # print(rows)
 
     if order == 1:
-        print("正序加载数据……")
+        print("Load data in positive order……")
 
     elif order == 0:
-        print("逆序加载数据……")
+        print("Loading data in reverse order……")
         rows = [x[::-1] for x in rows]
         # print(rows)
     cursor.close()
@@ -65,7 +65,7 @@ def sentence_to_ids(vocab, sentence, UNK=3):
     ids = [vocab.word2id.get(word, UNK) for word in sentence]
     return ids
 
-def pad_seq(seq, max_length, PAD=0):                    #句子长度未到25的，后面补0
+def pad_seq(seq, max_length, PAD=0):                    #If the length of the sentence is less than 25, 0 is added after it
     """
     :param seq: list of int,
     :param max_length: int,
@@ -94,7 +94,7 @@ def print_ids(ids, vocab, verbose=True, exclude_mark=True, PAD=0, BOS=1, EOS=2):
     return sentence
 
 
-class GeneratorPretrainingGenerator(Sequence):              #直接从原数据中取数据，制作x和y_true，作为x_train 和 y_train即训练数据和标签
+class GeneratorPretrainingGenerator(Sequence):              #Take the data directly from the original data and make x and y_true as x_train and y_train i.e. training data and labels
     def __init__(self, path, order, B, T, min_count=1, shuffle=True):
         self.PAD = 0
         self.BOS = 1
@@ -112,7 +112,7 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
 
         sentences = load_data(path, order)
 
-        print("原始数据", sentences)
+        print("Raw data", sentences)
         self.rows = sentences
 
         default_dict = {
@@ -130,8 +130,8 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
         self.raw_vocab = self.vocab.raw_vocab
         self.V = len(self.vocab.word2id)
         # with open(path, 'r', encoding='utf-8') as f:
-        #     self.n_data = sum(1 for line in f)          #数据行数
-        self.n_data = len(sentences)                  # 原始数据行数
+        #     self.n_data = sum(1 for line in f)          #Number of data rows
+        self.n_data = len(sentences)                  # Number of original data rows
         self.word2id = self.vocab.word2id
         self.id2word = self.vocab.id2word
         f = open('data/save/word2id.txt', 'w')
@@ -141,7 +141,7 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
         f.write(str(self.id2word))
         f.close()
         print("+++++++")
-        #记录f.read().lower()是不区分大小写；chars = sorted(list(set(raw_text)))能拆成字符级排序，其中set去重，sorted排序
+        #record f.read().lower() is case-insensitive; chars = sorted(list(set(raw_text))) can be split into character-level sorting, where set is de-weighted and sorted
         self.shuffle = shuffle
         self.idx = 0
         self.len = self.__len__()
@@ -150,9 +150,9 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
 
 
     def __len__(self):
-        return self.n_data // self.B        #总数据数除以一次训练所选取的样本数
+        return self.n_data // self.B        #Total number of data divided by the number of samples selected for one training
 
-    def __getitem__(self, idx):             ##读取原始数据中的第idx行，生成x和y_true
+    def __getitem__(self, idx):             #Read the idx row of the original data, generate x and y_true
         '''
         Get generator pretraining data batch.
         # Arguments:
@@ -168,7 +168,7 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
         # print("****************************")
         # self.count =self.count+1
         # print(self.count)
-        # print("idx为",idx)
+        # print("idx is",idx)
 
         x, y_true = [], []
         start = (idx-1) * self.B + 1
@@ -181,28 +181,28 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
             else:
                 # print("shuffle=False")
                 idx = i
-            # sentence = linecache.getline(self.path, idx)    #读取原始数据中的第idx行
+            # sentence = linecache.getline(self.path, idx)    #Read the idx row of the original data
             # words = sentence.strip().split()
             # print(idx)
-            sentence = self.rows[idx]                         #读取查询结果中的第idx行
+            sentence = self.rows[idx]                         #Read the idx row of the query result
             words = []
             for i in sentence:
                 words.append(i)
-            ids = sentence_to_ids(self.vocab, words)        #ids是一个list,存放的是原始数据中word的id序列
+            ids = sentence_to_ids(self.vocab, words)        #ids is a list that holds the sequence of word ids in the original data
 
-            ids_x, ids_y_true = [], []                      #置空
+            ids_x, ids_y_true = [], []                      #place empty
 
-            ids_x.append(self.BOS)                          #开头写入标识符BOS
-            ids_x.extend(ids)                               #添加ids即，当前句子中多个word所对应的id
+            ids_x.append(self.BOS)                          #Begin by writing the identifier BOS
+            ids_x.extend(ids)                               #Add ids, i.e., the ids corresponding to the multiple words in the current sentence
             ids_x.append(self.EOS) # ex. [BOS, 8, 10, 6, 3, EOS]
-            x.append(ids_x)                                 #X为多个句子组合而成的列表,np.array(x)).shape=(B,)，即B行，每行1个元素
+            x.append(ids_x)                                 #X is a list of multiple sentences combined,np.array(x)).shape=(B,), i.e. B rows, 1 element per row
             # print("x:",x)
             # print(type(x))
             # print((np.array(x)).shape)
 
             ids_y_true.extend(ids)
             ids_y_true.append(self.EOS) # ex. [8, 10, 6, 3, EOS]
-            y_true.append(ids_y_true)                       #截至目前，y_true与x，数据和形状都相似，都是(B,)，只是其中每个元素都少一个开头的BOS
+            y_true.append(ids_y_true)                       #As of now, y_true and x, with similar data and shape, are both (B,), except that each element in them has one less beginning BOS
             # print("y_true:",y_true)
             # print("y_true:")
             # print(type(y_true))
@@ -216,20 +216,20 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
             max_length = self.T
 
         for i, ids in enumerate(x):
-            x[i] = x[i][:max_length]                #循环了len(X)次，X[i]为列表X中的第i个句子,并截断到max_length的长度
+            x[i] = x[i][:max_length]                #loop len(X) times, X[i] is the i-th sentence in the list X, and truncated to the length of max_length
 
         for i, ids in enumerate(y_true):
             y_true[i] = y_true[i][:max_length]
 
-        x = [pad_seq(sen, max_length) for sen in x]     #句子长度未到25的，后面补0
+        x = [pad_seq(sen, max_length) for sen in x]     #If the length of the sentence is less than 25, 0 is added after it
         x = np.array(x, dtype=np.int32)
 
         y_true = [pad_seq(sen, max_length) for sen in y_true]
         y_true = np.array(y_true, dtype=np.int32)
         # print("y_true:", y_true[0][0])
-        y_true = to_categorical(y_true, num_classes=self.V)     #将原有的类别向量转换为one-hot的形式,维度为总词汇数量
+        y_true = to_categorical(y_true, num_classes=self.V)     #The original category vector is converted to one-hot form, and the dimension is the total number of words.
         # print("x:", x[0])
-        # print("y_true转化后:",y_true[0][0])
+        # print("y_true after conversion:",y_true[0][0])
         # print("x:", x)
         # print("y_true:",y_true)
 
@@ -243,12 +243,12 @@ class GeneratorPretrainingGenerator(Sequence):              #直接从原数据�
         self.idx += 1
         return (x, y_true)
 
-    def reset(self):                                    #重置，重新生成一个大小为n_data的乱序数组
+    def reset(self):                                    #Reset to regenerate a jumbled array of size n_data
         self.idx = 0
         if self.shuffle:
             self.shuffled_indices = np.arange(self.n_data)
-            random.shuffle(self.shuffled_indices)           #将列表中元素打乱
-        #print(self.shuffled_indices)                       #乱序的大小为n_data的乱序数组，[3850 1111 4587 ... 2454 3013 3144]
+            random.shuffle(self.shuffled_indices)           #Break up the elements in the list
+        #print(self.shuffled_indices)                       #A scrambled array of size n_data, [3850 1111 4587 ... 2454 3013 3144]
 
     def on_epoch_end(self):
         self.reset()
@@ -329,11 +329,11 @@ class DiscriminatorGenerator(Sequence):
 
 
         # with open(path_pos, 'r', encoding='utf-8') as f:
-        #     self.n_data_pos = sum(1 for line in f)              #原始数据行数
+        #     self.n_data_pos = sum(1 for line in f)              #Number of original data rows
 
-        self.n_data_pos = len(self.rows)                             #原始数据行数
+        self.n_data_pos = len(self.rows)                             #Number of original data rows
         with open(path_neg, 'r', encoding='utf-8') as f:
-            self.n_data_neg = sum(1 for line in f)              #生成数据行数
+            self.n_data_neg = sum(1 for line in f)              #Number of rows of generated data
         # f = open('data/save/word2id-d.txt', 'w')
         # f.write(str(self.word2id))
         # f.close()
@@ -364,9 +364,9 @@ class DiscriminatorGenerator(Sequence):
         for i in range(start, end):
             # print(start)
             # print(end)
-            # print("前：",idx)
-            idx = self.indicies[i]    #在原始数据与生成数据索引中随机选取一个值
-            # print("后",idx)
+            # print("Ex：",idx)
+            idx = self.indicies[i]    #Randomly select a value from the original data and the generated data index
+            # print("After",idx)
             is_pos = 1
             if idx < 0:
                 is_pos = 0
@@ -374,13 +374,13 @@ class DiscriminatorGenerator(Sequence):
             idx = idx - 1
 
             if is_pos == 1:
-                # sentence = linecache.getline(self.path_pos, idx) # str  #读取原始数据中的第idx行
+                # sentence = linecache.getline(self.path_pos, idx) # str  #Read the idx row of the original data
                 sentence = self.rows[idx]
                 words = []
                 for i in sentence:
                     words.append(i)
             elif is_pos == 0:
-                sentence = linecache.getline(self.path_neg, idx) # str  #读取生成数据中的第idx行
+                sentence = linecache.getline(self.path_neg, idx) # str  # Read the idx row of the generated data
                 words = sentence.strip().split()
             # words = sentence.strip().split()  # list of str  ex.['"261318"', '"SALEM"', '"MO"', '"65560"', '"DENT"', '"5737296626"', '"Pregnancy', 'and', 'Delivery', 'Care"', '"PC_01"', '"Elective', 'Delivery"']
             # print("word:",words)
@@ -399,9 +399,9 @@ class DiscriminatorGenerator(Sequence):
             max_length = self.T
 
         for i, ids in enumerate(X):
-            X[i] = X[i][:max_length]                #去掉超过最大长度的部分
+            X[i] = X[i][:max_length]                #Remove the part that exceeds the maximum length
 
-        X = [pad_seq(sen, max_length) for sen in X] #当前部分结束到最大长度部分补0
+        X = [pad_seq(sen, max_length) for sen in X] #The end of the current part to the maximum length part of the complement 0
         X = np.array(X, dtype=np.int32)
         # print("X:",X)
 
@@ -420,13 +420,13 @@ class DiscriminatorGenerator(Sequence):
 
     def reset(self):
         self.idx = 0
-        pos_indices = np.arange(start=1, stop=self.n_data_pos+1)        #得到一个从1开始的数组，大小为原始数据行数 ex. [1,2,3]
-        neg_indices = -1 * np.arange(start=1, stop=self.n_data_neg+1)   #得到一个从-1开始的数组，大小为生成数据行数 ex. [-1,-2,-3,-4]
-        self.indicies = np.concatenate([pos_indices, neg_indices])      #链接,ex. [1,2,3,-1,-2,-3,-4]
-        # print(pos_indices)                                              #在本例中为[   1    2    3 ... 5344 5345 5346] 长度为原始数据行数
-        # print(neg_indices)                                              #在本例中为[-1 -2 …… -500]        长度为生成数据行数
+        pos_indices = np.arange(start=1, stop=self.n_data_pos+1)        #Get an array starting from 1, with the size of the original data rows ex. [1,2,3]
+        neg_indices = -1 * np.arange(start=1, stop=self.n_data_neg+1)   #Get an array starting from -1 with the size of the number of rows of generated data ex. [-1,-2,-3,-4]
+        self.indicies = np.concatenate([pos_indices, neg_indices])      #Link,ex. [1,2,3,-1,-2,-3,-4]
+        # print(pos_indices)                                              #In this example is [ 1 2 3 ... 5344 5345 5346] length is the number of rows of the original data
+        # print(neg_indices)                                              #In this case it is [-1 -2 ...... -500] Length is the number of rows of generated data
         if self.shuffle:
-            random.shuffle(self.indicies)                               #乱序的[-1...-500 1..n_data_pos]
+            random.shuffle(self.indicies)                               #disordered [-1... -500 1..n_data_pos]
     def on_epoch_end(self):
         self.reset()
         pass

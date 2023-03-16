@@ -33,10 +33,12 @@ def GeneratorPretraining(V, E, H):
     '''
     # in comment, B means batch size, T means lengths of time steps.
     input = Input(shape=(None,), dtype='int32', name='Input') # (B, T)
-    out = Embedding(V, E, mask_zero=True, name='Embedding')(input) # (B, T, E)      #构建Layer之间的函数链式关系,Embedding层用以改变输出形状
-    out = LSTM(H, return_sequences=True, name='LSTM')(out)  # (B, T, H)             #构建Layer之间的函数链式关系
-    out = TimeDistributed(                                               #TimeDistributed层对每一个向量进行了一个Dense操作
-        Dense(V, activation='softmax', name='DenseSoftmax'),             #定义一个有V个节点，使用softmax激活函数的神经层
+    out = Embedding(V, E, mask_zero=True, name='Embedding')(input)  # (B, T, E)
+                                                                    # Build a chain of functions between Layers, Embedding layer to change the output shape
+    out = LSTM(H, return_sequences=True, name='LSTM')(out)  # (B, T, H)
+                                                            # Constructing a chain of functions between Layers
+    out = TimeDistributed(                                               # The TimeDistributed layer performs a Dense operation on each vector
+        Dense(V, activation='softmax', name='DenseSoftmax'),             # Define a neural layer with V nodes, using softmax activation function
         name='TimeDenseSoftmax')(out)    # (B, T, V)
     generator_pretraining = Model(input, out)
     return generator_pretraining
@@ -68,38 +70,38 @@ class Generator():
 
 
     def _build_gragh(self):
-        state_in = tf.placeholder(tf.float32, shape=(None, 1))      #传入数据，其中None指的batch size的大小，可以是任何数，1是指的数据的尺寸
-        h_in = tf.placeholder(tf.float32, shape=(None, self.H))     #(B,H)
-        c_in = tf.placeholder(tf.float32, shape=(None, self.H))     #(B,H)
-        action = tf.placeholder(tf.float32, shape=(None, self.V))   #onehot (B, V)
-        reward  =tf.placeholder(tf.float32, shape=(None, ))         #(B, )每一个batch的reward
+        state_in = tf.placeholder(tf.float32, shape=(None, 1))      # Pass in the data, where None refers to the size of the batch size, which can be any number, and 1 refers to the size of the data
+        h_in = tf.placeholder(tf.float32, shape=(None, self.H))     # (B,H)
+        c_in = tf.placeholder(tf.float32, shape=(None, self.H))     # (B,H)
+        action = tf.placeholder(tf.float32, shape=(None, self.V))   # onehot (B, V)
+        reward  =tf.placeholder(tf.float32, shape=(None, ))         # (B, ) the rewards of each batch
 
         self.layers = []
 
-        embedding = Embedding(self.V, self.E, mask_zero=True, name='Embedding')     #第一层为Embedding层
-        out = embedding(state_in)                                                   #输入为(B,V)，输出(B,1,E)
+        embedding = Embedding(self.V, self.E, mask_zero=True, name='Embedding')     # The first layer is the Embedding layer
+        out = embedding(state_in)                                                   # Input is (B,V), output (B,1,E)
         self.layers.append(embedding)
 
-        lstm = LSTM(self.H, return_state=True, name='LSTM')                         #lstm层
-        # out, next_h, next_c = Bidirectional(lstm(out, initial_state=[h_in, c_in]))                 #输入为（B,1,E）和2个（B,H）,输出为 (B, H)
-        out, next_h, next_c = lstm(out, initial_state=[h_in, c_in])                 #输入为（B,1,E）和2个（B,H）,输出为 (B, H)
+        lstm = LSTM(self.H, return_state=True, name='LSTM')                         # lstm layer
+        # out, next_h, next_c = Bidirectional(lstm(out, initial_state=[h_in, c_in]))                 # Input is (B,1,E) and 2 (B,H), output is (B, H)
+        out, next_h, next_c = lstm(out, initial_state=[h_in, c_in])                 # Input is (B,1,E) and 2 (B,H), output is (B, H)
         self.layers.append(lstm)
 
-        dense = Dense(self.V, activation='softmax', name='DenseSoftmax')            #全连接层
-        prob = dense(out)                                                           #输入为（B,H），输出为（B,V）
+        dense = Dense(self.V, activation='softmax', name='DenseSoftmax')            # Fully connected layer
+        prob = dense(out)                                                           # Input is (B,H), output is (B,V)
         self.layers.append(dense)
 
-        log_prob = tf.log(tf.reduce_mean(prob * action, axis=-1)) # (B, )         取每一行数据与onehot的action做乘法后，取平均值的对数
+        log_prob = tf.log(tf.reduce_mean(prob * action, axis=-1)) # (B, )         Take each row of data and multiply it with onehot's action, then take the logarithm of the average
         loss = - log_prob * reward
         optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
         minimize = optimizer.minimize(loss)
-        #以下操作为整体训练lstm，而本文需要单步进行，每次更新由rl指导，因此不进行下列操作
-        #model.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])  #编译模型
-        #print(model.summary())                                                                   #显示模型结构
-        #model.fit(data, labels)  # starts training                                               #拟合网络
-        #loss_and_metrics = model.evaluate(X_test, Y_test, batch_size=32)                         #测试
+        #The following operations are for the overall training of lstm, while this paper requires a single step, with each update guided by rl, so the following operations are not performed
+        #model.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])  # Compilation Model
+        #print(model.summary())                                                                   # Show model structure
+        #model.fit(data, labels)  # starts training                                               # Fitting the network
+        #loss_and_metrics = model.evaluate(X_test, Y_test, batch_size=32)                         # Testing
         #classes = model.predict_classes(X_test, batch_size=32)
-        #proba = model.predict_proba(X_test, batch_size=32)                                       #使用
+        #proba = model.predict_proba(X_test, batch_size=32)                                       # Use
 
         self.state_in = state_in
         self.h_in = h_in
@@ -188,36 +190,36 @@ class Generator():
 
         action = np.zeros((self.B,), dtype=np.int32)
         for i in range(self.B):
-            p = prob[i]                                        #p是一个1维V列的数组
+            p = prob[i]                                        # p is an array of 1-dimensional V columns
             # print("p:",p)
-            p /=p.sum()                                        #总概率归一化
-            action[i] = np.random.choice(self.V, p=p)          #根据p提供的概率，概率地选择从0到V之间的一个数
+            p /=p.sum()                                        # Total probability normalization
+            action[i] = np.random.choice(self.V, p=p)          # Probabilistically choose a number between 0 and V according to the probability provided by p
         #     print("action[i]",action[i])
         # print("action",action)
         return action
 
-    def sampling_sentence(self, T, BOS=1):                     #根据rnn生成句子
+    def sampling_sentence(self, T, BOS=1):                     # Generate sentences based on rnn
 
-        self.reset_rnn_state()                                  #参数h,c状态重置
-        action = np.zeros([self.B, 1], dtype=np.int32)          #生成大小为B的纵向数组，初始全0
-        action[:, 0] = BOS                                      #首位全置BOS
+        self.reset_rnn_state()                                  # Parameters h,c state reset
+        action = np.zeros([self.B, 1], dtype=np.int32)          # Generate a vertical array of size B, initially all 0
+        action[:, 0] = BOS                                      # First full placement BOS
         actions = action
         # print(T)
-        for _ in range(T):                                      #T是一句话的最大长度
-            prob = self.predict(action)                         #根据当前序列预测后续序列，返回参数
+        for _ in range(T):                                      # T is the maximum length of a sentence
+            prob = self.predict(action)                         # Predicts the subsequent sequence based on the current sequence and returns the parameters
             # print("prob:",prob)
-            action = self.sampling_word(prob).reshape(-1, 1)    #根据参数采样单词，并转成1列
+            action = self.sampling_word(prob).reshape(-1, 1)    # Sample words according to parameters and convert to 1 column
             # print("action:",action)
             # print(len(action))
             for i in range(len(action)):
                 if (action[i][0] == 4):
                     action[i][0] = 3
-                    # print("将none转化为unknown")
-            # print("转变后action:",action)
-            actions = np.concatenate([actions, action], axis=-1)#由word的id组成的B个句子的合集
+                    # print("Convert none to unknown")
+            # print("Post-transformation action:",action)
+            actions = np.concatenate([actions, action], axis=-1)#The set of B sentences composed by the id of the word
             # print("actions:",actions)
         # Remove BOS
-        actions = actions[:, 1:]        #取所有数据的第1列到右侧数据，即除第0列的右侧所有
+        actions = actions[:, 1:]        # Take all the data from the first column to the right side of the data, i.e. all the data on the right side except column 0
         # print(actions)
         self.reset_rnn_state()
 
@@ -228,14 +230,14 @@ class Generator():
         sentences=[]
 
         for _ in range(num // self.B + 1):
-            actions = self.sampling_sentence(T)                 #根据神经网络，生成句子，返回的是word的id所构成的array
+            actions = self.sampling_sentence(T)                 # Based on the neural network, the sentences are generated and returned as an array of the ids of the words
 
-            actions_list = actions.tolist()                     #从array变为list
+            actions_list = actions.tolist()                     # Change from array to list
 
             for sentence_id in actions_list:
                 # print("sentence_id",sentence_id)
-                sentence = [g_data.id2word[action] for action in sentence_id if action != 0 and action != 2]     #将id反转成word, 此句是上面的简洁写法
-                sentences.append(sentence)                      #生成器生成的句子
+                sentence = [g_data.id2word[action] for action in sentence_id if action != 0 and action != 2]     # Reverse the id to word, this is a concise version of the above
+                sentences.append(sentence)                      # Generators generate sentences
                 # print(sentences)
 
         output_str = ''
@@ -250,7 +252,7 @@ class Generator():
             f.write(output_str)
         print("生成的序列已写入",output_file)
 
-    def sampling_rule(self,   T, BOS=1):                     #根据rnn生成规则
+    def sampling_rule(self,   T, BOS=1):                     # Generate rules based on rnn
         # print("执行了sampling_rule")
 
         f = open('data/save/id2word.txt', 'r')
@@ -263,31 +265,31 @@ class Generator():
         f.close()
 
         self.reset_rnn_state()
-        action = np.zeros([self.B, 1], dtype=np.int32)          #生成大小为B的纵向数组，初始全0
+        action = np.zeros([self.B, 1], dtype=np.int32)          # into a vertical array of size B, initially all 0
         actions = np.empty([self.B, 0], dtype=np.int32)
         # print("actions",actions)
-        action[:, 0] = BOS                                      #首位全置BOS
-        for _ in range(T):                                      #T是一句话的最大长度
+        action[:, 0] = BOS                                      # First full placement BOS
+        for _ in range(T):                                      # T is the maximum length of a sentence
 
-            prob = self.predict(action)                         #根据当前序列预测后续序列，返回参数，输入到网络中的形状为（B,1）
+            prob = self.predict(action)                         # Predict the subsequent sequence based on the current sequence and return the parameters, which are input to the network in the shape of (B,1)
 
-            action = self.sampling_word(prob).reshape(-1, 1)    #根据参数采样单词，并转成1列
-            # print("训练时预测输出:", action,id2word[action[0][0]])
+            action = self.sampling_word(prob).reshape(-1, 1)    # Sample words according to parameters and convert to 1 column
+            # print("Predicted output at training time:", action,id2word[action[0][0]])
             action_=np.argmax(prob, axis=-1).reshape([-1, 1])
-            # print("训练时预测输出_:", action_,id2word[action_[0][0]])
+            # print("Predicted output at training_:", action_,id2word[action_[0][0]])
             # print("_________________")
             show2 = []
             for id in action:
                 # print(id)
                 word = id2word[id[0]]
                 show2.append(word)
-            # print("预测选择:",show2)
+            # print("Prediction selection:",show2)
 
             show3 = np.array(show2).reshape(-1, 1)
             # print(show3)
-            actions = np.concatenate([actions, show3], axis=-1) #规则生长
-            # print("当前规则:",actions)
-        self.reset_rnn_state()               #重置lstm的状态，很重要，删掉相当于接着上面的话继续预测，而不是根据当前状态预测
+            actions = np.concatenate([actions, show3], axis=-1) # Rule Growth
+            # print("Current Rules:",actions)
+        self.reset_rnn_state()               # Reset the state of lstm, it is important to delete the equivalent of the above words to continue to predict, rather than based on the current state prediction
 
 
         return actions
@@ -297,15 +299,15 @@ class Generator():
         # print(output_file)
         rules=[]
         for _ in range(num // self.B + 1):
-            actions = self.sampling_rule(T)                 #根据神经网络，生成句子
-            # print(actions.shape)                            #array,大小为(B,T)
+            actions = self.sampling_rule(T)                 # Generate sentences based on neural networks
+            # print(actions.shape)                            # array, size (B,T)
             print(actions)
-            actions_list = actions.tolist()                 #从array变为list,维度不变, ex.(32,7)
+            actions_list = actions.tolist()                 # change from array to list, dimension remains the same, ex.(32,7)
 
-            for rule_word in actions_list:                    #循环B次
+            for rule_word in actions_list:                    # Cycle B times
                 rule = rule_word
                 # print(rule)
-                rules.append(rule)                      #生成器生成的句子
+                rules.append(rule)                      # Generators generate sentences
                 # print(rules)
 
         output_str = ''
@@ -319,11 +321,11 @@ class Generator():
             output_str += ','.join(rules[i]) + '\n'
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(output_str)
-        print("生成样本数量为",num)
-        print("已写入", output_file)
+        print("The number of samples generated is",num)
+        print("Written", output_file)
 
-    def predict_rules(self):                    #生成单对单的规则
-        print("执行了predict_rules")
+    def predict_rules(self):                    # Rules for generating one-to-one orders
+        print("Executed predict_rules")
         f = open('data/save/id2word.txt', 'r')
         id2word = eval(f.read())
         f.close()
@@ -332,20 +334,20 @@ class Generator():
         f.close()
 
         self.reset_rnn_state()
-        reason = np.zeros([self.B, 1], dtype=np.int32)  # 生成大小为B的纵向数组，初始全0
-        word = '10001'#10001,DOTHAN,KINGMAN,POCAHONTAS,21303;BOAZ是错的
+        reason = np.zeros([self.B, 1], dtype=np.int32)  # Generate a vertical array of size B, initially all 0
+        word = '10001' # 10001,DOTHAN,KINGMAN,POCAHONTAS,21303;BOAZ is wrong
         reason[0][0] = word2id[word]
-        # print("输入的原因部分:", reason, id2word[reason[0][0]])  # ,action.shape,type(action)
+        # print("Reason for input section:", reason, id2word[reason[0][0]])  # ,action.shape,type(action)
         prob = self.predict(reason)
         result = np.argmax(prob, axis=-1).reshape([-1, 1])
-        # print("预测输出最大可能性的结果:", result, id2word[result[0][0]])
+        # print("Prediction of the maximum probable outcome of the output:", result, id2word[result[0][0]])
         result_ = np.random.choice(self.V, p=prob[0])
-        # print("随概率分布进行预测输出_:", result_, id2word[result_])
+        # print("Predicted output with probability distribution_:", result_, id2word[result_])
 
 
 
-    def multipredict_rules_argmax(self,reason):    #生成多对单的规则
-        print("执行了multipredict_rules")
+    def multipredict_rules_argmax(self,reason):    # Rules for generating many-to-one orders
+        print("Executed multipredict_rules")
         f = open('data/save/id2word.txt', 'r')
         id2word = eval(f.read())
         f.close()
@@ -365,18 +367,18 @@ class Generator():
             prob = self.predict(action)
             result = np.argmax(prob, axis=-1).reshape([-1, 1])
             result = id2word[result[0][0]]
-            #暂时注释掉下面
+            # Temporarily comment out the following
             #result_ = np.random.choice(self.V, p=prob[0])
             #result_ = id2word[result_]
-            #这部分显示可恢复
+            # This section shows recoverable
             # if (i==len(reason)-1):
-            #     print("输入的原因部分:", reason)  # ,action.shape,type(action)
-            #     print("预测输出最大可能性的结果:", result, )
-            #     print("随概率分布进行预测输出_:", result_, )
+            #     print("Reason for input section:", reason)  # ,action.shape,type(action)
+            #     print("Prediction of the maximum probable outcome of the output:", result, )
+            #     print("Predicted output with probability distribution_:", result_, )
         return result
 
-    def multipredict_rules_probability(self,reason):    #生成多对单的规则
-        print("执行了multipredict_rules")
+    def multipredict_rules_probability(self,reason):    # Rules for generating many-to-one orders
+        print("Executed multipredict_rules")
         f = open('data/save/id2word.txt', 'r')
         id2word = eval(f.read())
         f.close()
@@ -402,17 +404,17 @@ class Generator():
             result = id2word[result[0][0]]
             result_ = np.random.choice(self.V, p=prob[0])
             result_ = id2word[result_]
-            #这部分显示可恢复
+            # This section shows recoverable
             # if (i==len(reason)-1):
-            #     print("输入的原因部分:", reason)  # ,action.shape,type(action)
-            #     print("预测输出最大可能性的结果:", result, )
-            #     print("随概率分布进行预测输出_:", result_, )
+            #     print("Reason for input section:", reason)  # ,action.shape,type(action)
+            #     print("Prediction of the maximum probable outcome of the output:", result, )
+            #     print("Predicted output with probability distribution_:", result_, )
         return result_
 
     def train_rules(self,rule_len,path):
-        print("执行了train_rules")
+        print("Executed train_rules")
         rules_idx = rule_len
-        print("序列样本数量为",rules_idx)
+        print("Sequence sample size is",rules_idx)
         f = open('data/save/id2word.txt', 'r')
         id2word = eval(f.read())
         f.close()
@@ -421,16 +423,16 @@ class Generator():
         f.close()
         f = open('data/save/rules_final.txt', 'r')
         try:
-            rules_final = {}#若想每次在上一版的基础上改进，则为eval(f.read())
+            rules_final = {} # If you want to improve on the previous version each time, it is eval(f.read())
         except:
             rules_final = {}
         f.close()
 
         for idx in range(rules_idx):
-            sentence = linecache.getline(path, idx)  # 读取原始数据中的第idx行
-            words = sentence.strip().split(",")  # list类型
+            sentence = linecache.getline(path, idx)  # Read the idx row of the original data
+            words = sentence.strip().split(",")  # list type
             # print()
-            # print("sentence",sentence)          #增加可解释性时显示
+            # print("sentence",sentence)          # Add explainable time display
             # print("words:",words)               #words: ['31301', 'BENSON', 'AZ', '85602', 'COCHISE']
             # print("words[0]:",words[0])
             f = open('data/save/att_name.txt', 'r')
@@ -438,42 +440,42 @@ class Generator():
             f.close()
 
 
-            # LHS多属性函数依赖，此处若想恢复在生成规则时就进行筛选，查看E盘备份的此模块
+            # LHS multi-attribute function dependency, here if you want to restore the filtering at the time of rule generation, check this module of the E drive backup
             reason = words                                 #words: ['31301', 'BENSON', 'AZ', '85602', 'COCHISE']
-            self.reset_rnn_state()                         #重置LSTM状态
+            self.reset_rnn_state()                         # Resetting the LSTM state
             action = np.zeros([self.B, 1], dtype=np.int32)
             # print("self.B",self.B)
             for i in range(len(reason)-2):  # len(reason)
                 # print("___________________")
-                flag=i      #i是当前reason部分的最后一位，flag是标记，是当然reason中第一个元素所在位置，当flag<0，代表前面已经没用元素，即reason部分无法推出result，放弃该规则
-                flag_=flag  #新增信息应对的索引，从reason的最后一位开始向前移动
+                flag=i      # i is the last one of the current reason part, flag is the mark, is of course the first element in the reason location, when flag < 0, on behalf of the front has no use elements, that is, the reason part can not launch the result, give up the rule
+                flag_=flag  # Add an index of information response, starting from the last position of REASON and moving forward
 
                 while(flag>=0):
                     # print("flag",flag)
                     sqlex = ""
                     dic_name=[]
-                    left_=[]        #用以存贮构建字典的原因部分
-                    word_=[]        #用以存贮构建字典的名称,其实这个与dic_name相同
+                    left_=[]        # Used to store the reason part of the construction dictionary
+                    word_=[]        # is used to store the name of the constructed dictionary, which is actually the same as dic_name
                     while (flag_!=i):
                         # print("i=",i,"flag=",flag,"flag_=",flag_)
                         word = reason[flag_]
-                        left = label2att[flag_]  # 新增信息
+                        left = label2att[flag_]  # New Information
                         try:
                             action[0][0] = word2id[word]
                         except:
                             print("字典中无",word)
                             action[0][0] = '3'
 
-                        # print("增加信息",action,"即",left,":",word)    #增加可解释性时显示
+                        # print("Add information",action,"即",left,":",word)    # Add explainable time display
                         prob = self.predict(action)
                         dic_name.append(word)
                         left_.append(left)
                         word_.append(word)
                         flag_=flag_+1
-                    word = reason[flag_]  # word: 31301;word: BENSON;word: AZ;word: 85602;word: COCHISE，每次一个
+                    word = reason[flag_]  # word: 31301;word: BENSON;word: AZ;word: 85602;word: COCHISE，One at a time
                     dic_name.append(word)
                     # print(word)
-                    left = label2att[flag_]  # 获取字典里对应位置的属性名
+                    left = label2att[flag_]  # Get the attribute name of the corresponding position in the dictionary
                     right = label2att[i + 1]
 
                     try:
@@ -487,17 +489,17 @@ class Generator():
                     result = id2word[result[0][0]]  # 实际内容
                     # result_ = np.random.choice(self.V, p=prob[0])
                     # result_ = id2word[result_]
-                    # print("输入的原因部分:", word)  # ,action.shape,type(action)
-                    # print("预测输出最大可能性的结果:", result)
-                    # print("随概率分布进行预测输出_:", result_)
+                    # print("Reason for input section:", word)  # ,action.shape,type(action)
+                    # print("Prediction of the maximum probable outcome of the output:", result)
+                    # print("Predicted output with probability distribution_:", result_)
                     # print("___________________")
 
                     self.reset_rnn_state()
 
 
-                    #为后续增加部分规则建立字典，但排序需要在前面
+                    # Create dictionary for subsequent addition of partial rules, but sorting needs to be in front
                     for n in range(len(left_)):
-                        # print("补充字典")
+                        # print("Supplementary dictionaries")
                         # print(rules_final)
                         if (n==0):
                             addtwodimdict(rules_final, str(dic_name), 'reason', {str(left_[n]): str(word_[n])})
@@ -506,7 +508,7 @@ class Generator():
 
 
                     if (i==flag):
-                        # print("此时i=flag")
+                        # print("At this point i=flag")
                         addtwodimdict(rules_final,str(dic_name), 'reason',{str(left): str(word)})
                         addtwodimdict(rules_final,str(dic_name), 'result', {str(right): str(result)})
                         # print(rules_final)
@@ -518,24 +520,24 @@ class Generator():
                         addtwodimdict(rules_final[str(dic_name)], 'result', str(right), str(result))
                         # print(rules_final)
 
-                    # print("此时原因部分为", rules_final[str(dic_name)]['reason'],"预测值：", rules_final[str(dic_name)]['result'],"实际值为",reason[i+1])    #增加可解释性时显示
+                    # print("At this point the cause section is", rules_final[str(dic_name)]['reason'],"Predicted value：", rules_final[str(dic_name)]['result'],"The actual value is",reason[i+1])    #  Add explainable time display
 
 
 
 
-                    # 把认为正确的规则保存至字典,删除错误规则
+                    # Save the rules you think are correct to the dictionary, delete the wrong rules
                     if (result==reason[i+1]):
-                        # print("预测值与实际值相同，保存规则")       #增加可解释性时显示
-                        #推出来了，就跳出循环，否则flag前移一位，加入额外信息继续测试
+                        # print("The predicted value is the same as the actual value, save rule")       #Add explainable time display
+                        # If it comes out, jump out of the loop, otherwise the flag is moved forward by one bit and additional information is added to continue the test
                         break
                     else:
-                        # print("预测值与实际值不符，增加原因部分")    #增加可解释性时显示
+                        # print("The predicted value does not match the actual value, increase the reason part")    # Add explainable time display
                         del rules_final[str(dic_name)]
 
                     flag=flag-1
                     flag_=flag
                     # if flag<0:
-                        # print("已无更多可用信息，reason部分无法推出result，放弃该规则")    #增加可解释性时显示
+                        # print("There is no more information available, the reason part can not launch the result, abandon the rule")    # Add explainable time display
 
             f = open('data/save/rules_final.txt', 'w')
             # print(str(rules_final))
@@ -551,27 +553,27 @@ class Generator():
             f.close()
 
 
-        print("规则生成完成，数量为",len(rules_final))
+        print("The rule generation is complete and the number of",len(rules_final))
         # print(str(rules_final))
 
     def filter(self,path):
 
-        print("执行了filter")
+        print("The filter is executed")
         f = open('data/save/att_name.txt', 'r')
         label2att = eval(f.read())
         f.close()
-        att2label = {v: k for k, v in label2att.items()}  #字典反向传递
+        att2label = {v: k for k, v in label2att.items()}  # Dictionary Reverse Transfer
         f = open('data/save/rules_final.txt', 'r')
         rules_final = eval(f.read())
         f.close()
         l1=len(rules_final)
         # print(rules_final)
         num = 0
-        conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+        conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
         cursor = conn.cursor()
         for rulename, ruleinfo in list(rules_final.items()):
             num += 1
-            # print("过滤第", num, "条规则及对应数据")
+            # print("Filter page", num, "Rules and corresponding data")
             # print("ruleinfo:", ruleinfo)
 
             left = list(ruleinfo['reason'].keys())
@@ -597,20 +599,20 @@ class Generator():
             rows = cursor.fetchall()
             num1=len(rows)
             if num1<3:
-                # print("满足规则的数据有",num1,"条，推测来源为错误数据，无修复意义，删除规则",rules_final[str(rulename)])
+                # print("The data that satisfy the rule are",num1,"Article, the source is presumed to be wrong data, no sense of repair, delete the rule "",rules_final[str(rulename)])
                 del rules_final[str(rulename)]
                 continue
             else:
                 t_rule=1
                 for row in rows:
-                    if (str(row[-1]) == str(result)):  # 此时规则与数据相符合, 规则置信度增加
+                    if (str(row[-1]) == str(result)):  # In this case, the rule matches the data, and the confidence of the rule increases
                         t_rule = t_rule + 1
                         print("-->", t_rule, end='')
-                    else:  # 此时规则与数据相违背, 规则置信度减少
+                    else:  # In this case, the rule is contrary to the data, and the confidence of the rule is reduced
                         t_rule = t_rule - 2
                         print("-->", t_rule, end='')
-                        flag = 0  # 标记该规则与数据存在冲突
-                rules_final[str(rulename)].update({'confidence': t_rule})  # 规则置信度初始化
+                        flag = 0  # Mark the rule as conflicting with the data
+                rules_final[str(rulename)].update({'confidence': t_rule})  # Rule confidence initialization
                 # rules_final[str(rulename)].update({'confidence': 1})
             # sql2 = "select \"" + right + "\" from \"" + path + "\" where \"" + sqlex + " and \"" + right + "\"='" + result + "'"
             # # print(sql2)
@@ -620,7 +622,7 @@ class Generator():
             # # print(num2)
             # ratio = num2 / num1
             # if ratio < 0.51:
-            #     # print("推测来源为错误数据，无修复意义，删除规则")
+            #     # print("Measure the source is wrong data, no sense to fix, delete the rule")
             #     del rules_final[str(rulename)]
             #     continue
 
@@ -632,13 +634,13 @@ class Generator():
         f.write(str(rules_final))
         f.close()
         l2=len(rules_final)
-        print("规则过滤完成，剩余数量为", )
+        print("Rule filtering is complete and the remaining number of", )
         print(str(l2))
-        # print(str(rules_final))           #过滤后规则
+        # print(str(rules_final))           # Post-filtering rules
         with open('data/save/log_filter.txt', 'w') as f:
-            f.write("原始规则数量为")
+            f.write("The number of original rules is")
             f.write(str(l1))
-            f.write("规则过滤后，剩余数量为")
+            f.write("After rule filtering, the remaining number of")
             f.write(str(l2))
             f.write("__________")
         f.close()
@@ -648,39 +650,39 @@ class Generator():
         t0=1
         t_rule=t0
         t_tuple=t0
-        t_max=t_tuple   #满足rule条件的不同tuple中置信度最大值
-        flag=1         #标记该规则是否与数据存在冲突
-        flag_trust = 0  # 0代表相信数据，1代表相信规则
+        t_max=t_tuple   # The maximum value of confidence in different tuples satisfying the RULE condition
+        flag=1         # Flag whether the rule conflicts with the data
+        flag_trust = 0  # 0 for believe data, 1 for believe rule
         for row in rows:
             if (str(row[RHS]) == str(result)):
                 continue
             else:
                 dert += 1
-                flag = 0   # 标记该规则与数据存在冲突
-        if (flag==1):           #该规则不与数据存在冲突,则直接给一个极大置信度
+                flag = 0   # Mark the rule as conflicting with the data
+        if (flag==1):           # If the rule does not conflict with the data, a great confidence level is given directly
             t_rule=t_rule+100
-            flag_trust = 3  # 3代表规则正确, 且无任何冲突
+            flag_trust = 3  # 3 means the rule is correct and there is no conflict
             return flag_trust
-        else:                   #该规则与数据存在冲突,则计算每个tuple的置信度,以调整t_rule
-            print("该规则与数据存在冲突")
-            print("本次修复预计变化量", dert)
+        else:                   # The rule conflicts with the data, then the confidence of each tuple is calculated to adjust t_rule
+            print("The rule conflicts with the data")
+            print("Estimated changes for this restoration", dert)
             error_row=[]
             rule_other=[]
             t_rule=t0
-            for row in rows:    #每个满足规则条件的tuple
+            for row in rows:    # Each tuple that satisfies the rule condition
                 AV_p=[]
-                t_tp = 999   #当前tuple的置信度, 计算为一个tuple中不同AV_i中的置信度最小值,为了避免初始值干扰,先设定个大值
+                t_tp = 999   # The confidence of the current tuple is calculated as the minimum value of the confidence of different AV_i in a tuple, and a large value is set first to avoid the interference of the initial value.
                 t_tc = t0
-                # flag_p=0     #用以记录AV_p中置信度最小的对应的属性位置
-                # rule_p_name=[] #用以记录能够修复上述的AV_p中置信度最小的对应的属性的具有最大置信度的规则
-                # print("匹配当前规则的tuple为：", row)
-                for i in LHS:       #计算一个tuple中不同AV_i中的置信度最小值
+                # flag_p=0     # Used to record the position of the attribute corresponding to the lowest confidence level in AV_p
+                # rule_p_name=[] # Record the rule with the highest confidence that can repair the attribute with the lowest confidence in the above AV_p
+                # print("The tuples that match the current rule are：", row)
+                for i in LHS:       # Calculate the minimum value of confidence in different AV_i in a tuple
                     AV_p.append(row[i])
                     t_AV_i = t0
                     # rulename_p_max = []
                     # t_rmax = 0
                     attribute_p=label2att[i]
-                    for rulename_p, ruleinfo_p in list(self.rule.items()):      #遍历字典
+                    for rulename_p, ruleinfo_p in list(self.rule.items()):      # Traversing the dictionary
                         if rulename == rulename_p:
                             continue
                         if t_AV_i>100 or t_AV_i<-100:
@@ -694,26 +696,26 @@ class Generator():
                             continue
                         right = k[0]
                         if attribute_p == right:
-                            flag_equal = 0  # 规则能否确定row[i]的标记
+                            flag_equal = 0  # Can the rule determine the token of row[i]
                             for k in range(len(left)):
-                                if row[att2label[left[k]]] == word[k]:  # 若row[i]所在的tuple满足某条规则的全部AV_p,标记为1
+                                if row[att2label[left[k]]] == word[k]:  # If the tuple where row[i] is located satisfies all AV_p of a rule, mark it as 1
                                     flag_equal = 1
                                 else:
                                     flag_equal = 0
                                     break
-                            if flag_equal == 1:  # 若该tuple中row[i]能够被其他规则确定,检测其是否满足规则
-                                # print(row, "中")
-                                # print(right, "可以由其他规则确定：", ruleinfo)
+                            if flag_equal == 1:  # If the row[i] in the tuple can be determined by other rules, check whether it satisfies the rule
+                                # print(row, "Medium")
+                                # print(right, "Can be determined by other rules：", ruleinfo)
                                 result2 = v[0]
-                                # if t_rmax < t_r:  # 记录这些规则中最大的规则置信度
+                                # if t_rmax < t_r:  # Record the maximum rule confidence in these rules
                                 #     t_rmax = t_rmax
-                                #     rulename_p_max = rulename_p  # 记录该最可信规则在字典中的标识
-                                if str(row[i]) == str(result2):    # 检索其他规则以确定该tuple中每个Token的置信度,满足则增加,反之则减
+                                #     rulename_p_max = rulename_p  # Record the identification of the most trusted rule in the dictionary
+                                if str(row[i]) == str(result2):    # Retrieve other rules to determine the confidence level of each token in the tuple, increase if it is satisfied, and decrease if it is not.
                                     t_AV_i = t_AV_i + t_r
                                 else:
                                     t_AV_i = t_AV_i - t_r
-                                    print("匹配当前规则的tuple为：", row)
-                                    print("AV_p中",str(row[i]), "与", str(result2), "不符,对应的规则为", ruleinfo_p, "其置信度为", t_r)
+                                    print("The tuples that match the current rule are：", row)
+                                    print("In AV_p",str(row[i]), "with", str(result2), "does not match, the corresponding rule is", ruleinfo_p, "Its confidence level is", t_r)
 
                     if t_tp > t_AV_i:
                         t_tp = t_AV_i
@@ -721,7 +723,7 @@ class Generator():
                         # rule_p_name=rulename_p_max
 
 
-                for rulename_c, ruleinfo_c in list(self.rule.items()):  # 遍历字典,计算t_c
+                for rulename_c, ruleinfo_c in list(self.rule.items()):  # Iterate through the dictionary, calculate t_c
                     if rulename==rulename_c:
                         continue
                     v = list(ruleinfo_c['result'].values())
@@ -734,23 +736,23 @@ class Generator():
                     right = k[0]
                     attribute_c = label2att[RHS]
                     if attribute_c == right:
-                        flag_equal = 0  # 规则能否确定row[i]的标记
+                        flag_equal = 0  # Can the rule determine the token of row[i]
                         for k in range(len(left)):
-                            if row[att2label[left[k]]] == word[k]:  # 若AV_c所在的tuple满足某条规则的全部AV_p,标记为1
+                            if row[att2label[left[k]]] == word[k]:  # If the tuple in which AV_c is located satisfies all AV_p of a rule, mark it as 1
                                 flag_equal = 1
                             else:
                                 flag_equal = 0
                                 break
-                        if flag_equal == 1:  # 若该tuple中AV_c能够被其他规则确定,检测其是否满足规则
+                        if flag_equal == 1:  # If the AV_c in the tuple can be determined by other rules, check whether it satisfies the rules
                             result2 = v[0]
                             if str(row[RHS]) == str(result2):
                                 t_tc = t_tc + t_r
                             else:
                                 t_tc = t_tc - t_r
-                                print("匹配当前规则的tuple为：", row)
-                                print("AV_c中",str(row[RHS]), "与", str(result2), "不符,对应的规则为", ruleinfo_c, "其置信度为", t_r)
+                                print("The tuples that match the current rule are：", row)
+                                print("In AV_c",str(row[RHS]), "with", str(result2), "does not match, the corresponding rule is", ruleinfo_c, "Its confidence level is", t_r)
 
-                if t_tp==999:        #说明其中所有单元都无法被其他规则确定, 将其值重置为t0
+                if t_tp==999:        # means that all cells in it cannot be determined by other rules, reset its value to t0
                     t_tp=t0
                 if t_tc < t_tp:
                     t_tuple = t_tc
@@ -758,20 +760,20 @@ class Generator():
                     t_tuple = t_tp
 
 
-                # print("匹配该规则的部分为", AV_p, "-->",row[RHS],"其置信度为",t_tuple)
-                if (str(row[RHS]) == str(result)):  # 该元组数据与规则相符合, 置信度增加
-                    # print("此时t_rule=",t_rule,"t_tuple=",t_tuple,"math.ceil(math.log(1+t_tuple))=",math.ceil(math.log(1+t_tuple)))
-                    # print("规则确定值为",result,";实际值为",row[RHS],"相符,规则置信度增加",t_rule, end='')
+                # print("The part that matches the rule is", AV_p, "-->",row[RHS],"其置信度为",t_tuple)
+                if (str(row[RHS]) == str(result)):  # The tuple data is consistent with the rule, and the confidence level increases
+                    # print("At this time t_rule=",t_rule,"t_tuple=",t_tuple,"math.ceil(math.log(1+t_tuple))=",math.ceil(math.log(1+t_tuple)))
+                    # print("The rule determines the value of",result,";The actual value is",row[RHS],"match,rule confidence increase",t_rule, end='')
                     if t_tuple>0:
                         t_rule = t_rule + math.ceil(math.log(1+t_tuple))
                     else:
                         t_rule = t_rule + t_tuple
                     t_max = t_max
                     print("-->", t_rule, end='')
-                else:  # 该元组数据与规则相违背, 计算对应tuple的置信度
-                    # print("此时t_rule=", t_rule, "t_tuple=", t_tuple, "int(math.log(abs(t_tuple)))=",
+                else:  # If the tuple data violates the rule, calculate the confidence of the corresponding tuple
+                    # print("At this time t_rule=", t_rule, "t_tuple=", t_tuple, "int(math.log(abs(t_tuple)))=",
                     #       int(math.log(abs(t_tuple))))
-                    # print("规则确定值为", result, ";实际值为", row[RHS], "违反,规则置信度降低", t_rule, end='')
+                    # print("The rule determines the value of", result, ";The actual value is", row[RHS], "Violation, rule confidence reduction", t_rule, end='')
                     if t_tuple>0:
                         t_rule = t_rule - 2*t_tuple
                     else:
@@ -780,7 +782,7 @@ class Generator():
 
                     if (t_rule < -100):
                         flag_trust = 0
-                        return flag_trust  # 此时规则置信度过小,直接跳出循环,标记为错误
+                        return flag_trust  # In this case, the confidence level of the rule is too small, so the loop is directly jumped and marked as error.
 
                 if t_max < t_tuple:
                     t_max = t_tuple
@@ -793,26 +795,26 @@ class Generator():
                 #     rule_other.append(rule_p_name)
 
 
-            print("最终规则置信度为",t_rule,"与其冲突的元组中置信度最大的为",t_max)
+            print("The final rule confidence level is",t_rule,"The tuple with which it conflicts has the highest confidence level of",t_max)
         if (t_rule > t_max ):
-             flag_trust = 1  # 此时认为规则正确，修改数据
+             flag_trust = 1  # At this point the rule is considered correct and the data is modified
         elif (t_rule < t_max ):
              flag_trust = 0
-             # print("最终规则置信度为", t_rule, "与其冲突的元组中置信度最大的为", t_max)
-             return flag_trust  # 此时认为数据正确，修改规则
-        self.rule[str(rulename)].update({'confidence': t_rule}) #规则置信度初始化可以考虑单拿出来
+             # print("The final rule confidence level is", t_rule, "The tuple with which it conflicts has the highest confidence level of", t_max)
+             return flag_trust  # At this point the data is considered correct and the rule is modified
+        self.rule[str(rulename)].update({'confidence': t_rule}) # Rule confidence initialization can be considered to be taken out separately
         print()
         return flag_trust
 
 
     def repair(self,iteration_num,path,order):
 
-        print("执行了repair")
+        print("Performed a REPAIR")
         f = open('data/save/att_name.txt', 'r')
         label2att = eval(f.read())
         f.close()
         # print(label2att)
-        att2label = {v: k for k, v in label2att.items()}  #字典反向传递
+        att2label = {v: k for k, v in label2att.items()}  # Dictionary Reverse Transfer
         f = open('data/save/rules_final.txt', 'r')
         self.rule = eval(f.read())
         f.close()
@@ -820,11 +822,11 @@ class Generator():
         num = 0
         error_rule=0
         error_data=0
-        conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # 连接数据库
+        conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
         cursor = conn.cursor()
         for rulename, ruleinfo in list(self.rule.items()):
             num += 1
-            print("修复第", num, "条规则及对应数据")
+            print("Fix the first", num, "Rules and corresponding data")
             # print("rulename:" + rulename)
             print("ruleinfo:", ruleinfo)
 
@@ -842,14 +844,14 @@ class Generator():
             RHS=att2label[right]
             sqlex = left[0] + "\"='" + word[0] + "'"
             i = 1
-            # AV_p = "\""+left[0]+"\""+","     #把left里的数据转化为字符串形式
+            # AV_p = "\""+left[0]+"\""+","     # Convert the data in left to string form
             while (i < len(left)):
                 sqlex = sqlex + " and \"" + left[i] + "\"='" + word[i] + "'"
                 # AV_p = AV_p +"\""+ left[i]+"\""+","
                 LHS.append(att2label[left[i]])
                 i += 1
                 # print(sqlex)
-            # print("AV_p索引：",LHS,"AV_c索引：",RHS)
+            # print("AV_p Index：",LHS,"AV_c Index：",RHS)
             # AV_c = "\"" + right + "\""
             # print("AV_p:",AV_p,"AV_c:",AV_c)
 
@@ -862,7 +864,7 @@ class Generator():
             # print("rows:")
             flag_trust=self.detect(rows,result,rulename,LHS,RHS,att2label,label2att)
 
-            if (flag_trust == 3):       # 3代表规则正确, 且无任何冲突, 直接进行下一条规则
+            if (flag_trust == 3):       # 3 means the rule is correct, and there is no conflict, proceed directly to the next rule
                 continue
 
             if (flag_trust == 0):
@@ -870,39 +872,39 @@ class Generator():
 
             s1=0
             while (flag_trust == 0 and s1 < 3):
-                print("规则不可信，修复规则")
-                print("修复规则右侧")
+                print("Rules can't be trusted, fix the rules")
+                print("Repair rules right")
                 s1 += 1
                 result=self.multipredict_rules_probability(word)
-                print("右侧更改为",result)
+                print("Right side changed to",result)
                 flag_trust=self.detect(rows,result,rulename,LHS,RHS,att2label,label2att)
 
                     # print("trust=",trust)
                 if (flag_trust==1):
-                    print("规则修复成功")
+                    print("Rule repair successful")
                     addtwodimdict(self.rule,str(rulename), 'result', {str(right): str(result)})
-                    print("修改后规则为",self.rule[str(rulename)])
+                    print("The modified rule is",self.rule[str(rulename)])
                 elif (flag_trust==0 and s1==5):
-                    print("规则右侧无可替换修复")
+                    print("No replacement fix on the right side of the rule")
 
 
             s2 = 0
             while (flag_trust == 0 and s2 < 3):
                 result = v[0]
-                print("修复规则左侧")
+                print("Repair rules left")
                 s2 += 1
                 min=10
                 flag = int(att2label[left[0]])
                 # print(flag)
                 if (min > flag):
-                    min = flag  # 目前reason部分最左侧对应的索引
+                    min = flag  # The index corresponding to the leftmost part of the current REASON section
                 # print(min)
                 if(min==0):
-                    print("规则左侧无可增加修复，删除该条规则")
+                    print("No fixes can be added to the left side of the rule, delete the rule")
                     del self.rule[str(rulename)]
                     break
                 left_new=label2att[min-1]
-                print("增加",left_new,"信息")
+                print("Add",left_new,"Information")
                 sqladd= "select \"" + left_new + "\" from \"" + path + "\" where \"" + sqlex+"and \"" + right + "\"='" + result + "'"
                 print("sqladd:",sqladd)
                 cursor.execute(sqladd)
@@ -912,9 +914,9 @@ class Generator():
                 # print(self.rule[str(rulename)])
 
 
-                #重构字典
+                #Reconstructing the dictionary
                 if(rows_left ==[]):
-                    # print("规则左侧无满足条件修改,删除该条规则")
+                    # print("There is no condition modified on the left side of the rule, delete the rule")
                     del self.rule[str(rulename)]
                     break
                 # print(rows_left)
@@ -923,7 +925,7 @@ class Generator():
                     del self.rule[str(rulename)]['reason'][left[n]]
                     addtwodimdict(self.rule[str(rulename)], 'reason', str(left[n]), str(word[n]))
                 # left = list(ruleinfo['reason'].keys())
-                ######否则，字典里新增的内容应该在最前面，但现在在最后面
+                # Otherwise, the addition to the dictionary should be at the top, but now it's at the end
                 # tex=[]
                 # tex.append(rows_left[0][0])
                 # for t in range(len(word)):
@@ -951,14 +953,14 @@ class Generator():
                 # print(result)
                 flag_trust=self.detect(rows,result,rulename,LHS,RHS,att2label,label2att)
                 if (flag_trust == 1):
-                    print("规则修复成功")
-                    print("修改后规则为", self.rule[str(rulename)])
+                    print("Rule repair successful")
+                    print("The modified rule is", self.rule[str(rulename)])
                 elif (flag_trust == 1 and min!=0) :
-                    # print("规则左侧无满足条件修改,删除该条规则")
+                    # print("There is no condition modified on the left side of the rule, delete the rule")
                     del self.rule[str(rulename)]
                     break
             if (flag_trust == 0):
-                print("规则无可用修复,删除该规则")
+                print("Rule is not available to fix, delete the rule")
 
             if (flag_trust == 1):
                 t0=1
@@ -967,18 +969,18 @@ class Generator():
                         continue
                     else:
                         AV_p = []
-                        t_tp = 999  # 当前tuple的置信度, 计算为一个tuple中不同AV_i中的置信度最小值,为了避免初始值干扰,先设定个大值
+                        t_tp = 999  # The confidence of the current tuple is calculated as the minimum value of the confidence of different AV_i in a tuple, and a large value is set first to avoid the interference of the initial value.
                         t_tc = t0
-                        flag_p=0     #用以记录AV_p中置信度最小的对应的属性位置
-                        rule_p_name=[] #用以记录能够修复上述的AV_p中置信度最小的对应的属性的具有最大置信度的规则
-                        print("匹配当前规则的tuple为：", row)
-                        for i in LHS:  # 计算一个tuple中不同AV_i中的置信度最小值
+                        flag_p=0     # Used to record the position of the attribute corresponding to the lowest confidence level in AV_p
+                        rule_p_name=[] # Record the rule with the highest confidence that can repair the attribute with the lowest confidence in the above AV_p
+                        print("The tuples that match the current rule are：", row)
+                        for i in LHS:  # Calculate the minimum value of confidence in different AV_i in a tuple
                             AV_p.append(row[i])
                             t_AV_i = t0
                             attribute_p = label2att[i]
                             rulename_p_max = []
-                            t_rmax = -999       # 下面遍历的字典中能纠正AV_i的规则中最大置信度, 初始设为极小值
-                            for rulename_p, ruleinfo_p in list(self.rule.items()):  # 遍历字典
+                            t_rmax = -999       # The maximum confidence level of the rules that correct AV_i in the following iterative dictionary, initially set to a minimal value
+                            for rulename_p, ruleinfo_p in list(self.rule.items()):  # Traversing the dictionary
                                 if rulename == rulename_p:
                                     continue
                                 if t_AV_i > 100 or t_AV_i < -100:
@@ -992,33 +994,33 @@ class Generator():
                                     continue
                                 right = k[0]
                                 if attribute_p == right:
-                                    flag_equal = 0  # 规则能否确定row[i]的标记
+                                    flag_equal = 0  # Can the rule determine the token of row[i]
                                     for k in range(len(left)):
-                                        if row[att2label[left[k]]] == word[k]:  # 若row[i]所在的tuple满足某条规则的全部AV_p,标记为1
+                                        if row[att2label[left[k]]] == word[k]:  # If the tuple where row[i] is located satisfies all AV_p of a rule, mark it as 1
                                             flag_equal = 1
                                         else:
                                             flag_equal = 0
                                             break
-                                    if flag_equal == 1:  # 若该tuple中row[i]能够被其他规则确定,检测其是否满足规则
-                                        # print(row, "中")
-                                        # print(right, "可以由其他规则确定：", ruleinfo)
+                                    if flag_equal == 1:  # If the row[i] in the tuple can be determined by other rules, check whether it satisfies the rule
+                                        # print(row, "Medium")
+                                        # print(right, "Can be determined by other rules：", ruleinfo)
                                         result2 = v[0]
-                                        if t_rmax < t_r:  # 记录这些规则中最大的规则置信度
+                                        if t_rmax < t_r:  # 记Record the maximum rule confidence in these rules
                                             t_rmax = t_rmax
-                                            rulename_p_max = rulename_p  # 记录该最可信规则在字典中的标识
+                                            rulename_p_max = rulename_p  # Record the identification of the most trusted rule in the dictionary
                                         if str(row[i]) == str(result2):
                                             t_AV_i = t_AV_i + t_r
                                         else:
                                             t_AV_i = t_AV_i - t_r
-                                            print("AV_p中", str(row[i]), "与", str(result2), "不符,对应的规则为", ruleinfo_p,
-                                                  "其置信度为", t_r)
+                                            print("In AV_p", str(row[i]), "with", str(result2), "does not match, the corresponding rule is", ruleinfo_p,
+                                                  "Its confidence level is", t_r)
 
                             if t_tp > t_AV_i:
                                 t_tp = t_AV_i
-                                flag_p=i                    #记录置信度最小的AV_i的索引
-                                rule_p_name=rulename_p_max  #记录能纠正该AV_i的置信度最大的规则名
+                                flag_p=i                    # Record the index of AV_i with the lowest confidence
+                                rule_p_name=rulename_p_max  # Record the name of the rule that corrects this AV_i with the highest confidence
 
-                        for rulename_c, ruleinfo_c in list(self.rule.items()):  # 遍历字典,计算t_c
+                        for rulename_c, ruleinfo_c in list(self.rule.items()):  # Iterate through the dictionary, calculate t_c
                             if rulename == rulename_c:
                                 continue
                             v = list(ruleinfo_c['result'].values())
@@ -1031,60 +1033,62 @@ class Generator():
                             right = k[0]
                             attribute_c = label2att[RHS]
                             if attribute_c == right:
-                                flag_equal = 0  # 规则能否确定row[i]的标记
+                                flag_equal = 0  # Can the rule determine the token of row[i]
                                 for k in range(len(left)):
-                                    if row[att2label[left[k]]] == word[k]:  # 若AV_c所在的tuple满足某条规则的全部AV_p,标记为1
+                                    if row[att2label[left[k]]] == word[k]:  # If the tuple in which AV_c is located satisfies all AV_p of a rule, mark it as 1
                                         flag_equal = 1
                                     else:
                                         flag_equal = 0
                                         break
-                                if flag_equal == 1:  # 若该tuple中AV_c能够被其他规则确定,检测其是否满足规则
+                                if flag_equal == 1:  # If the AV_c in the tuple can be determined by other rules, check whether it satisfies the rules
                                     result2 = v[0]
                                     if str(row[RHS]) == str(result2):
                                         t_tc = t_tc + t_r
                                     else:
                                         t_tc = t_tc - t_r
-                                        print("AV_c中", str(row[RHS]), "与", str(result2), "不符,对应的规则为", ruleinfo_c, "其置信度为",
+                                        print("In AV_c", str(row[RHS]), "with", str(result2), "does not match, the corresponding rule is", ruleinfo_c, "Its confidence level is",
                                               t_r)
 
-                        if t_tp == 999:  # 说明其中所有单元都无法被其他规则确定, 将其值重置为t0
+                        if t_tp == 999:  # means that all cells in it cannot be determined by other rules, reset its value to t0
                             t_tp = t0
                         if t_tc < t_tp or t_tc == t_tp:
-                            print("此时认为数据结果部分错误,根据规则修复数据,当前规则为",rulename,"-->",result,"t_p为",t_tp,"t_c为",t_tc)
+                            print("In this case, the data result is considered partially wrong, and the data is repaired according to the rule, the current rule is",rulename,"-->",result,"t_p is",t_tp,"t_c is",t_tc)
                             for x in range(len(row)-1):  # t2
                                 if x == 0:
                                     sql_info = "\"" + label2att[x] + "\"='" + row[x] + "'"
                                 else:
                                     sql_info = sql_info + " and \"" + label2att[x] + "\"='" + row[x] + "'"
                             sql_update = "update \"" + path + "\" set \"Label\"='2' , \"" + label2att[RHS] + "\"='" + result + "' where  " + sql_info + ""
-                            print("原始：", sql_info)
-                            print("Update信息：", sql_update)
+                            print("Original：", sql_info)
+                            print("Update Information：", sql_update)
                             cursor.execute(sql_update)
                             conn.commit()
                         else:
                             print(rule_p_name)
                             if rule_p_name==[]:
-                                print("可能有错误")
+                                print("There may be errors")
                                 continue
                             rname=self.rule[str(rule_p_name)]
                             v2 = list(rname['result'].values())
                             result2 = v2[0]
-                            print("此时认为数据推论部分错误,根据规则修复数据,当前规则为", rule_p_name, "-->", result2, "t_p为", t_tp, "t_c为", t_tc)
+                            print("At this point, the data inference is considered partially wrong, and the data is "
+                                  "repaired according to the rule, the current rule is", rule_p_name, "-->", result2,
+                                  "t_p is", t_tp, "t_c is", t_tc)
                             for x in range(len(row)-1):  # t2
                                 if x == 0:
                                     sql_info = "\"" + label2att[x] + "\"='" + row[x] + "'"
                                 else:
                                     sql_info = sql_info + " and \"" + label2att[x] + "\"='" + row[x] + "'"
                             sql_update = "update \"" + path + "\" set \"Label\"='2' , \"" + label2att[flag_p] + "\"='" + result2 + "' where  " + sql_info + ""
-                            print("原始：", sql_info)
-                            print("Update信息：", sql_update)
+                            print("Original：", sql_info)
+                            print("Update Information：", sql_update)
                             cursor.execute(sql_update)
                             conn.commit()
                             continue
 
 
             # if (flag_trust == 1):
-            #     # 只修复标记为'1'的错误数据，并标记为2
+            #     # Fix only the wrong data marked as '1' and marked as 2
             #     # sql_update = "update \"Hosp2_rule_copy\" set \"" + right + "\"='" + result + "' , \"Label\"='2'   where \"Label\"='1' or \"Label\"='2' and \"" + sqlex
             #     # print(sql_update)
             #     # sql_check = "select * from \"" + path + "\"   where  \"" + sqlex#\"" + right + "\"  #(\"Label\"='1' or \"Label\"='2') and
@@ -1115,7 +1119,7 @@ class Generator():
             #             # print("row[flag_check]:",row[flag_check])
             #             # print("result",result)
             #             sql_update="update \"" + path + "\" set \"Label\"='2' , \"" + att[flag_check] + "\"='" + result + "' where  " + sql_info + ""
-            #             print("Update信息：", sql_update)
+            #             print("Update Information：", sql_update)
             #             cursor.execute(sql_update)
             #             conn.commit()
 
@@ -1124,25 +1128,25 @@ class Generator():
             # if num>200:
             #     break
 
-        print("修复完成")
-        print("保存修复规则")
-        print("规则字典大小", len(self.rule))
+        print("Repair completed")
+        print("Save repair rules")
+        print("Rule dictionary size", len(self.rule))
         # print(str(self.rule))
         f = open('data/save/rules_final.txt', 'w')
         f.write(str(self.rule))
         f.close()
         with open('data/save/log.txt', 'a') as f:
-            f.write("本次共使用规则数量")
+            f.write("Total number of rules used this time")
             f.write(str(num))
-            f.write("规则错误数量")
+            f.write("Number of rule errors")
             f.write(str(error_rule))
-            f.write("数据错误数量")
+            f.write("Number of data errors")
             f.write(str(error_data))
             f.write("__________")
             f.close()
 
 
-        # 这里可用来循环修复直到无新错误数据
+        # This can be used to loop through the fixes until there is no new error data
         # if (iteration_num>0):
         #     print(iteration_num)
         #     if (error_rule != 0):
