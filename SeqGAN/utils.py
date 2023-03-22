@@ -4,6 +4,7 @@ import linecache
 from keras.utils import Sequence
 from keras.utils.np_utils import to_categorical
 import cx_Oracle
+import sqlite3
 
 import code
 
@@ -33,7 +34,8 @@ class Vocab:    #Building a Vocabulary
 
 def load_data(path, order):
 
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)

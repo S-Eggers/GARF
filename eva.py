@@ -1,12 +1,13 @@
-import cx_Oracle
+import sqlite3
 
 def evaluate(path_ori,path):
     # path_ori="Hosp_rules"
     # path="Hosp_rules_copy"
     # path_ori = "LETTER"
     # path = "LETTER_copy"\
-    print("进行评估")
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # print("Conduct an evaluation")
+    #conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     sql1 = "select * from \"" + path + "\" where \"Label\"='2' or \"Label\"='3'"    #where rownum < 3  #order by "Provider ID" desc
@@ -81,7 +82,7 @@ def evaluate(path_ori,path):
     data2 = cursor.fetchall()
     recall = correct / len(data2)
 
-    print(len(data2),"Fixed",len_update,"of which the correct number is",correct,"，The number of errors is",error)
+    print(len(data2),"Fixed",len_update,"of which the correct number is",correct,", The number of errors is",error)
     # print(correct, error, len_update)
     print("precision:", precision)
     print("recall:", recall)
@@ -97,7 +98,7 @@ def evaluate(path_ori,path):
         f.write(str(len_update))
         f.write("of which the correct number is")
         f.write(str(correct))
-        f.write("，The number of errors is")
+        f.write(", The number of errors is")
         f.write(str(error))
         f.write("precision:")
         f.write(str(precision))

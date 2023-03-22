@@ -1,17 +1,17 @@
-import math
-import cx_Oracle
+import sqlite3
 import os
 
 def rule_sample(path_rules,path, order):
 
     #rule_test = 'rule_test.txt'
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    #conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)
     cursor.execute(sql1)
-    data_all = cursor.fetchall()  # 全体数据
-    data_all = [x[:-1] for x in data_all]  # 去掉Label列
+    data_all = cursor.fetchall()  # All data
+    data_all = [x[:-1] for x in data_all]  # Removing the Label column
 
     if order == 1:
         print("Positive sequence sampling data to production rules……")
@@ -30,9 +30,9 @@ def rule_sample(path_rules,path, order):
                 continue
             else:
                 if rule_tuple == '':
-                    rule_tuple = data_cell
+                    rule_tuple = f"{data_cell}"
                 else:
-                    rule_tuple += ',' + (data_cell)
+                    rule_tuple += f",{data_cell}"
         rule += rule_tuple + '\n'
         # print(type(rule))
     top=os.getcwd()

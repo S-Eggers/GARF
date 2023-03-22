@@ -1,15 +1,20 @@
 import cx_Oracle
+import sqlite3
 
 def att_reverse(path,order):
 
 
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)
     cursor.execute(sql1)
     data1 = cursor.fetchall()  # All data
+    #print(len(data1))
+
     data1 = [x[:-1] for x in data1]     # Data with label removed
+    #print(len(data1))
     if order == 0:
         data1 = [x[::-1] for x in data1]    # Reverse order
         des = cursor.description
@@ -18,7 +23,7 @@ def att_reverse(path,order):
         del (des[0])    # Remove the label from the table header
     else:
         des = cursor.description
-    print(data1)
+    #print(len(data1))
 
     # print(type(des))
     # print("Description of the table:", des)

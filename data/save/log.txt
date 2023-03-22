@@ -1,1 +1,1 @@
-本次共使用规则数量223规则错误数量4数据错误数量0__________
+Total number of rules used this time1599Number of rule errors31Number of data errors0__________

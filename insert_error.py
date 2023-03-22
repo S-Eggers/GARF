@@ -1,11 +1,13 @@
 import cx_Oracle
+import sqlite3
 import random
 import reset
 
 
 def insert_error(path_ori,path,error_rate):
 
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    #conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     random.seed(1)
@@ -70,9 +72,9 @@ def insert_error(path_ori,path,error_rate):
 
         for i in range(t2):  # t2
             if i == 0:
-                sql_inf = "\"" + att[i] + "\"='" + row[i] + "'"
+                sql_inf = f"\"{att[i]}\"='{row[i]}'"
             else:
-                sql_inf = sql_inf + " and \"" + att[i] + "\"='" + row[i] + "'"
+                sql_inf += f" and \"{att[i]}\"='{row[i]}'"
         sql_info = sql_inf + " and \"Label\"='None'"
         # print(sql_info)
         if count<int(count_error_all/3):
@@ -99,7 +101,7 @@ def insert_error(path_ori,path,error_rate):
         # print(error)
         if (error is None):
             error=""
-        sql2 = "update \"" + path + "\" set \"Label\"='1' , \"" + att[r] + "\"='" + error + "' where  " + sql_info + "" #and \"" + att[r] + "\"='error'
+        sql2 = f"update \"{path}\" set \"Label\"='1' , \"{att[r]}\"='{error}' where {sql_info}" #and \"" + att[r] + "\"='error'
         # print(sql2)
         cursor.execute(sql2)
         conn.commit()
@@ -135,8 +137,7 @@ def insert_error(path_ori,path,error_rate):
         # print(sql4)
         cursor.execute(sql5)
         conn.commit()
-        sql_dirty = "update \"" + path2 + "\" set \"Label\"='1' , \"" + att[
-            r] + "\"='" + error + "' where  " + sql_inf + ""
+        sql_dirty = f"update \"{path2}\" set \"Label\"='1' , \"{att[r]}\"='{error}' where {sql_inf}"
         cursor.execute(sql_dirty)
         conn.commit()
         count = count + 1

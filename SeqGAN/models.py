@@ -12,6 +12,7 @@ import tensorflow as tf
 import pickle
 import linecache
 import cx_Oracle
+import sqlite3
 import math
 import json
 from SeqGAN.utils import Vocab,load_data
@@ -226,7 +227,7 @@ class Generator():
         return actions
 
     def generate_samples(self, T, g_data, num, output_file):
-        print("执行了generate_samples")
+        print("Generate_samples was executed")
         sentences=[]
 
         for _ in range(num // self.B + 1):
@@ -246,11 +247,15 @@ class Generator():
             # print(sentences[i])
             # if (sentences[i] is None):
             #     sentences[i]=""
-            output_str += ' '.join(sentences[i]) + '\n'
+            print(sentences[i])
+            sentence_str = ""
+            for word in sentences[i]:
+                sentence_str += f"{word} "
+            output_str += sentence_str + '\n'
             # print(output_str)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(output_str)
-        print("生成的序列已写入",output_file)
+        print("The generated sequence is written to",output_file)
 
     def sampling_rule(self,   T, BOS=1):                     # Generate rules based on rnn
         # print("执行了sampling_rule")
@@ -354,7 +359,6 @@ class Generator():
         f = open('data/save/word2id.txt', 'r')
         word2id = eval(f.read())
         f.close()
-
         self.reset_rnn_state()
         action = np.zeros([self.B, 1], dtype=np.int32)
         # print(action.shape)
@@ -431,6 +435,7 @@ class Generator():
         for idx in range(rules_idx):
             sentence = linecache.getline(path, idx)  # Read the idx row of the original data
             words = sentence.strip().split(",")  # list type
+            # print(words)
             # print()
             # print("sentence",sentence)          # Add explainable time display
             # print("words:",words)               #words: ['31301', 'BENSON', 'AZ', '85602', 'COCHISE']
@@ -463,7 +468,7 @@ class Generator():
                         try:
                             action[0][0] = word2id[word]
                         except:
-                            print("字典中无",word)
+                            print("Not in the dictionary", word)
                             action[0][0] = '3'
 
                         # print("Add information",action,"即",left,":",word)    # Add explainable time display
@@ -482,7 +487,7 @@ class Generator():
                         action[0][0] = word2id[word]
                     except:
                         action[0][0] = '3'
-                        print("字典中无该词")
+                        print("No such word in the dictionary")
 
                     prob = self.predict(action)
                     result = np.argmax(prob, axis=-1).reshape([-1, 1])  # 字典索引
@@ -569,7 +574,8 @@ class Generator():
         l1=len(rules_final)
         # print(rules_final)
         num = 0
-        conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+        # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+        conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
         for rulename, ruleinfo in list(rules_final.items()):
             num += 1
@@ -822,7 +828,8 @@ class Generator():
         num = 0
         error_rule=0
         error_data=0
-        conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+        # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+        conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
         for rulename, ruleinfo in list(self.rule.items()):
             num += 1
@@ -1055,12 +1062,12 @@ class Generator():
                             print("In this case, the data result is considered partially wrong, and the data is repaired according to the rule, the current rule is",rulename,"-->",result,"t_p is",t_tp,"t_c is",t_tc)
                             for x in range(len(row)-1):  # t2
                                 if x == 0:
-                                    sql_info = "\"" + label2att[x] + "\"='" + row[x] + "'"
+                                    sql_info = f"\"{label2att[x]}\"='{row[x]}'"
                                 else:
-                                    sql_info = sql_info + " and \"" + label2att[x] + "\"='" + row[x] + "'"
+                                    sql_info += f" and \"{label2att[x]}\"='{row[x]}'"
                             sql_update = "update \"" + path + "\" set \"Label\"='2' , \"" + label2att[RHS] + "\"='" + result + "' where  " + sql_info + ""
-                            print("Original：", sql_info)
-                            print("Update Information：", sql_update)
+                            print("Original: ", sql_info)
+                            print("Update Information: ", sql_update)
                             cursor.execute(sql_update)
                             conn.commit()
                         else:

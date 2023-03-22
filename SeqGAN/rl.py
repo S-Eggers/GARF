@@ -146,7 +146,10 @@ class Environment(object):
             for i in range(len(words)):
                 if (words[i] == None):
                     words[i] = '<UNK>'
-            print(''.join(words))
+            word_str = ""
+            for word in words:
+                word_str += f"{word}"
+            print(word_str)
         print('-' * 80)
 
 

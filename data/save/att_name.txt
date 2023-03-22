@@ -1,1 +1,1 @@
-{0: 'src', 1: 'flight', 2: 'sched_dep_time', 3: 'act_dep_time', 4: 'sched_arr_time', 5: 'act_arr_time'}
+{0: 'Provider ID', 1: 'City', 2: 'State', 3: 'ZIP Code', 4: 'County Name', 5: 'Phone Number', 6: 'Condition', 7: 'Measure ID'}

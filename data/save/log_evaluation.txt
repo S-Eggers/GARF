@@ -1,1 +1,1 @@
-237个错误，修复了101个，其中正确数量为95，错误数量为6precision:0.9405940594059405           recall:0.4008438818565401           f_measure:0.5621301775147929
+1000Fixed374of which the correct number is372, The number of errors is2precision:0.9946524064171123           recall:0.372           f_measure:0.5414847161572053

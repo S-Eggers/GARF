@@ -89,7 +89,7 @@ if flag == 1 or flag == 2:
     # trainer.generate_rules(config["path_rules"], config["generate_samples"])  
     # Production of rule sequence, i.e. rules.txt
 
-    trainer.train_rules(rule_len,config["path_rules"])  # For production rules, generate rules_final.txt from rules.txt
+    trainer.train_rules(rule_len, config["path_rules"])  # For production rules, generate rules_final.txt from rules.txt
 
     trainer.filter(config["path_pos"])
 
