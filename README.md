@@ -21,10 +21,10 @@ Test dataset with 10k data items, Hosp dataset results in accuracy of 98% ± 1% 
 With the increase of data volume, the model performance is improved, and the amount of Hosp data in the paper is 100k, and the amount of Food data is 200k
 For additional data, please click the following link:
 
-Translated with www.DeepL.com/Translator (free version)
 
 Hosp：https://data.medicare.gov/data/physician-compare  
 Food：https://data.cityofchicago.org  -> https://data.cityofchicago.org/Health-Human-Services/Food-Inspections/4ijn-s7e5
+
 Flight：http://lunadong.com/fusionDataSets.htm  
 UIS：https://www.cs.utexas.edu/users/ml/riddle/data.html  
 
