@@ -1,4 +1,4 @@
-import cx_Oracle
+import sqlite3
 
 def reset(path_ori,path):
 
@@ -9,7 +9,8 @@ def reset(path_ori,path):
     # path_ori = "Test"
     # path = "Test_copy"
     print("Resetting the data set",path)
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db") 
     cursor = conn.cursor()
     # sql= 'INSERT INTO "Hosp_rules_copy1" SELECT * FROM "Hosp_rules" ORDER BY "Provider ID"'
     # sql ='DELETE FROM "Hosp2_rule_copy" '
@@ -56,7 +57,8 @@ def reset(path_ori,path):
 
 def dict_generator():
     path="Hosp_rules_copy"
-    conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
     print(sql1)
@@ -64,7 +66,6 @@ def dict_generator():
     data1 = cursor.fetchall()  # All data
     des = cursor.description
     t2 = len(data1[0]) - 1  # Length of data per row, -1 is to become index position
-
     att_name = []
     for item in des:
         att_name.append(item[0])

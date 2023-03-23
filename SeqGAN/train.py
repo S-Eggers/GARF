@@ -95,7 +95,7 @@ class Trainer(object):
         self.discriminator.fit_generator(
             self.d_data,
             steps_per_epoch=None,
-            epochgs=d_epochs)
+            epochs=d_epochs)
         self.discriminator.save(self.d_pre_path)
 
     def load_pre_train(self, g_pre_path, d_pre_path):
