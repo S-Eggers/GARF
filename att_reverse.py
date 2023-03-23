@@ -17,7 +17,7 @@ def att_reverse(path,order):
     #print(len(data1))
     if order == 0:
         data1 = [x[::-1] for x in data1]    # Reverse order
-        des = cursor.description
+        des = list(cursor.description)
         des.reverse()
         print(des)
         del (des[0])    # Remove the label from the table header

@@ -1,1 +1,1 @@
-The number of original rules is2255After rule filtering, the remaining number of1599__________
+The number of original rules is2219After rule filtering, the remaining number of1579__________
