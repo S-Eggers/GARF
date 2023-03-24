@@ -1,15 +1,14 @@
-from SeqGAN.models import GeneratorPretraining, Discriminator, Generator
+from SeqGAN.models import GeneratorPretraining, Discriminator
 from SeqGAN.utils import GeneratorPretrainingGenerator, DiscriminatorGenerator
 from SeqGAN.rl import Agent, Environment
 from keras.optimizers import Adam
 import os
 import numpy as np
 import tensorflow as tf
-sess = tf.Session()
+sess = tf.compat.v1.Session()
 import keras.backend as K
 K.set_session(sess)
 
-import code
 
 class Trainer(object):
     '''
@@ -51,7 +50,7 @@ class Trainer(object):
         self.pre_train_discriminator(d_epochs=d_epochs, d_pre_path=d_pre_path, lr=d_lr)
 
     def pre_train_generator(self, g_epochs=3, g_pre_path=None, lr=1e-3):
-        print("预训练生成器")
+        print("Pre-training generator")
         if g_pre_path is None:
             self.g_pre_path = os.path.join(self.top, 'data', 'save', 'generator_pre.hdf5')  #D:\PycharmProjects\Garf-master\data\save\generator_pre.hdf5
         else:

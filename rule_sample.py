@@ -4,7 +4,6 @@ import os
 def rule_sample(path_rules,path, order):
 
     #rule_test = 'rule_test.txt'
-    #conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "

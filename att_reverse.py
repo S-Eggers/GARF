@@ -1,10 +1,7 @@
-import cx_Oracle
 import sqlite3
 
 def att_reverse(path,order):
-
-
-    # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # Connecting to the database
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "
@@ -20,7 +17,7 @@ def att_reverse(path,order):
         des = list(cursor.description)
         des.reverse()
         print(des)
-        del (des[0])    # Remove the label from the table header
+        del des[0]    # Remove the label from the table header
     else:
         des = cursor.description
     #print(len(data1))

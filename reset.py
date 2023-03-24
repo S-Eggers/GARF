@@ -57,7 +57,7 @@ def reset(path_ori,path):
 
 def dict_generator():
     path="Hosp_rules_copy"
-    # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # Connecting to the database
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     sql1 = "select * from \"" + path + "\" "

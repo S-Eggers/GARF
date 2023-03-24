@@ -1,4 +1,3 @@
-import cx_Oracle
 import sqlite3
 import random
 import reset

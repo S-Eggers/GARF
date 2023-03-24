@@ -3,10 +3,8 @@ import random
 import linecache
 from keras.utils import Sequence
 from keras.utils.np_utils import to_categorical
-import cx_Oracle
 import sqlite3
 
-import code
 
 class Vocab:    #Building a Vocabulary
     def __init__(self, word2id, unk_token):

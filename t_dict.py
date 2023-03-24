@@ -1,6 +1,3 @@
-import numpy as np
-import cx_Oracle
-
 
 def addtwodimdict(thedict, key_a, key_b, val):
   if key_a in thedict:

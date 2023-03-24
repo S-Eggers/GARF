@@ -1,6 +1,4 @@
-from SeqGAN.models import Generator, GeneratorPretraining, Discriminator
-from SeqGAN.utils import DiscriminatorGenerator
-import keras.backend as K
+from SeqGAN.models import Generator
 import numpy as np
 
 class Agent(object):

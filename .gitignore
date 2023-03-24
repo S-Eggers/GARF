@@ -1,3 +1,5 @@
 seq_gan.egg-info
 __pycache__
 .idea/vcs.xml
+*.code-workspace
+*.DS_STORE

@@ -1,1 +1,1 @@
-Total number of rules used this time1579Number of rule errors38Number of data errors0__________
+Total number of rules used this time4234Number of rule errors66Number of data errors0__________

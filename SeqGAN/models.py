@@ -1,23 +1,16 @@
 import numpy as np
-import keras
 import keras.backend as K
 from keras.models import Model
-from keras.layers import Input, Lambda, Activation, Dropout, Concatenate
-from keras.layers import Dense, Embedding, LSTM, Conv1D, GlobalMaxPooling1D
-from keras.layers.wrappers import Bidirectional
-from keras.layers import Activation
+from keras.layers import Input, Lambda, Dropout
+from keras.layers import Dense, Embedding, LSTM
 from keras.layers.wrappers import TimeDistributed
 from keras.utils import to_categorical
 import tensorflow as tf
 import pickle
 import linecache
-import cx_Oracle
 import sqlite3
 import math
-import json
-from SeqGAN.utils import Vocab,load_data
 
-import code
 
 def GeneratorPretraining(V, E, H):
     '''
@@ -71,11 +64,11 @@ class Generator():
 
 
     def _build_gragh(self):
-        state_in = tf.placeholder(tf.float32, shape=(None, 1))      # Pass in the data, where None refers to the size of the batch size, which can be any number, and 1 refers to the size of the data
-        h_in = tf.placeholder(tf.float32, shape=(None, self.H))     # (B,H)
-        c_in = tf.placeholder(tf.float32, shape=(None, self.H))     # (B,H)
-        action = tf.placeholder(tf.float32, shape=(None, self.V))   # onehot (B, V)
-        reward  =tf.placeholder(tf.float32, shape=(None, ))         # (B, ) the rewards of each batch
+        state_in = tf.compat.v1.placeholder(tf.float32, shape=(None, 1))      # Pass in the data, where None refers to the size of the batch size, which can be any number, and 1 refers to the size of the data
+        h_in = tf.compat.v1.placeholder(tf.float32, shape=(None, self.H))     # (B,H)
+        c_in = tf.compat.v1.placeholder(tf.float32, shape=(None, self.H))     # (B,H)
+        action = tf.compat.v1.placeholder(tf.float32, shape=(None, self.V))   # onehot (B, V)
+        reward  =tf.compat.v1.placeholder(tf.float32, shape=(None, ))         # (B, ) the rewards of each batch
 
         self.layers = []
 
@@ -92,9 +85,9 @@ class Generator():
         prob = dense(out)                                                           # Input is (B,H), output is (B,V)
         self.layers.append(dense)
 
-        log_prob = tf.log(tf.reduce_mean(prob * action, axis=-1)) # (B, )         Take each row of data and multiply it with onehot's action, then take the logarithm of the average
+        log_prob = tf.math.log(tf.reduce_mean(input_tensor=prob * action, axis=-1)) # (B, )         Take each row of data and multiply it with onehot's action, then take the logarithm of the average
         loss = - log_prob * reward
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
+        optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)
         minimize = optimizer.minimize(loss)
         #The following operations are for the overall training of lstm, while this paper requires a single step, with each update guided by rl, so the following operations are not performed
         #model.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])  # Compilation Model
@@ -115,7 +108,7 @@ class Generator():
         self.minimize = minimize
         self.loss = loss
 
-        self.init_op = tf.global_variables_initializer()
+        self.init_op = tf.compat.v1.global_variables_initializer()
         self.sess.run(self.init_op)
 
     def reset_rnn_state(self):
@@ -247,18 +240,18 @@ class Generator():
             # print(sentences[i])
             # if (sentences[i] is None):
             #     sentences[i]=""
-            print(sentences[i])
-            sentence_str = ""
-            for word in sentences[i]:
-                sentence_str += f"{word} "
-            output_str += sentence_str + '\n'
+            #sentence_str = ""
+            #for word in sentences[i]:
+            #    sentence_str += f"{word} "
+            #output_str += sentence_str + '\n'
+            output_str += ' '.join(sentences[i]) + '\n'
             # print(output_str)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(output_str)
         print("The generated sequence is written to",output_file)
 
     def sampling_rule(self,   T, BOS=1):                     # Generate rules based on rnn
-        # print("执行了sampling_rule")
+        # print("The sampling_rule is executed")
 
         f = open('data/save/id2word.txt', 'r')
         id2word = eval(f.read())
@@ -300,7 +293,7 @@ class Generator():
         return actions
 
     def generate_rules(self, T, g_data, num, output_file):
-        print("执行了generate_rules")
+        print("Generate_rules was executed")
         # print(output_file)
         rules=[]
         for _ in range(num // self.B + 1):
@@ -490,7 +483,7 @@ class Generator():
                         print("No such word in the dictionary")
 
                     prob = self.predict(action)
-                    result = np.argmax(prob, axis=-1).reshape([-1, 1])  # 字典索引
+                    result = np.argmax(prob, axis=-1).reshape([-1, 1])  # Dictionary Index
                     result = id2word[result[0][0]]  # 实际内容
                     # result_ = np.random.choice(self.V, p=prob[0])
                     # result_ = id2word[result_]
@@ -720,7 +713,7 @@ class Generator():
                                     t_AV_i = t_AV_i + t_r
                                 else:
                                     t_AV_i = t_AV_i - t_r
-                                    print("The tuples that match the current rule are：", row)
+                                    print("The tuples that match the current rule are: ", row)
                                     print("In AV_p",str(row[i]), "with", str(result2), "does not match, the corresponding rule is", ruleinfo_p, "Its confidence level is", t_r)
 
                     if t_tp > t_AV_i:
@@ -755,7 +748,7 @@ class Generator():
                                 t_tc = t_tc + t_r
                             else:
                                 t_tc = t_tc - t_r
-                                print("The tuples that match the current rule are：", row)
+                                print("The tuples that match the current rule are: ", row)
                                 print("In AV_c",str(row[RHS]), "with", str(result2), "does not match, the corresponding rule is", ruleinfo_c, "Its confidence level is", t_r)
 
                 if t_tp==999:        # means that all cells in it cannot be determined by other rules, reset its value to t0
@@ -766,7 +759,7 @@ class Generator():
                     t_tuple = t_tp
 
 
-                # print("The part that matches the rule is", AV_p, "-->",row[RHS],"其置信度为",t_tuple)
+                # print("The part that matches the rule is", AV_p, "-->",row[RHS],"Its confidence level is",t_tuple)
                 if (str(row[RHS]) == str(result)):  # The tuple data is consistent with the rule, and the confidence level increases
                     # print("At this time t_rule=",t_rule,"t_tuple=",t_tuple,"math.ceil(math.log(1+t_tuple))=",math.ceil(math.log(1+t_tuple)))
                     # print("The rule determines the value of",result,";The actual value is",row[RHS],"match,rule confidence increase",t_rule, end='')
@@ -980,7 +973,7 @@ class Generator():
                         t_tc = t0
                         flag_p=0     # Used to record the position of the attribute corresponding to the lowest confidence level in AV_p
                         rule_p_name=[] # Record the rule with the highest confidence that can repair the attribute with the lowest confidence in the above AV_p
-                        print("The tuples that match the current rule are：", row)
+                        print("The tuples that match the current rule are: ", row)
                         for i in LHS:  # Calculate the minimum value of confidence in different AV_i in a tuple
                             AV_p.append(row[i])
                             t_AV_i = t0
@@ -1087,8 +1080,8 @@ class Generator():
                                 else:
                                     sql_info = sql_info + " and \"" + label2att[x] + "\"='" + row[x] + "'"
                             sql_update = "update \"" + path + "\" set \"Label\"='2' , \"" + label2att[flag_p] + "\"='" + result2 + "' where  " + sql_info + ""
-                            print("Original：", sql_info)
-                            print("Update Information：", sql_update)
+                            print("Original: ", sql_info)
+                            print("Update Information: ", sql_update)
                             cursor.execute(sql_update)
                             conn.commit()
                             continue
