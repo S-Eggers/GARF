@@ -1,12 +1,12 @@
 import sqlite3
 
-def evaluate(path_ori,path):
+def evaluate(path_ori, path):
     # path_ori="Hosp_rules"
     # path="Hosp_rules_copy"
     # path_ori = "LETTER"
     # path = "LETTER_copy"\
     # print("Conduct an evaluation")
-    #conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
+    # Connecting to the database
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
@@ -48,8 +48,8 @@ def evaluate(path_ori,path):
             # print("Update Information：", sql_update)
             cursor.execute(sql_update)
             conn.commit()
-            # print("The target result is missing, the original correct data is not the same as the repaired data")
-            # print(sql2)
+            #print("The target result is missing, the original correct data is not the same as the repaired data")
+            #print(sql2)
             error += 1
             continue
         x1=data_ori[0]
@@ -89,7 +89,7 @@ def evaluate(path_ori,path):
     cursor.close()
     conn.close()
     f_measure = 2 * precision * recall / (precision + recall)
-    print(f_measure)
+    print("f1:", f_measure)
 
     with open('data/save/log_evaluation.txt', 'a') as f:
         f.write("")

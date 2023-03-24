@@ -8,7 +8,7 @@ def reset(path_ori,path):
     # path = "Hosp_rules_copy"
     # path_ori = "Test"
     # path = "Test_copy"
-    print("Resetting the data set",path)
+    print("Resetting the data set", path)
     # conn = cx_Oracle.connect('system', 'Pjfpjf11', '127.0.0.1:1521/orcl')  # Connecting to the database
     conn = sqlite3.connect("database.db") 
     cursor = conn.cursor()

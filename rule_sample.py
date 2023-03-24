@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-def rule_sample(path_rules,path, order):
+def rule_sample(path_rules, path, order):
 
     #rule_test = 'rule_test.txt'
     conn = sqlite3.connect("database.db")

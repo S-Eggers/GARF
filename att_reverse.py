@@ -21,7 +21,6 @@ def att_reverse(path,order):
     else:
         des = cursor.description
     #print(len(data1))
-
     # print(type(des))
     # print("Description of the table:", des)
     # print("Table Header:", ",".join([item[0] for item in des]))
@@ -44,10 +43,6 @@ def att_reverse(path,order):
 
 
 if __name__ == '__main__':
-
-
     path = "Hosp_rules_copy"
-
     att_reverse(path,1)
     # dict_generator()
-

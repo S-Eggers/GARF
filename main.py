@@ -28,8 +28,8 @@ print("Load the config and define the variables")
 
 flag = 2  # 0 for training SeqGAN, 1 for repairing part, 2 for doing it simultaneously
 order = 1  # Order, 1 for positive order, 0 for negative order
-
 att_reverse(path, order)
+
 if flag == 0 or flag == 2:
     trainer = Trainer(order,
                       config["batch_size"],
@@ -67,6 +67,7 @@ if flag == 0 or flag == 2:
                   d_weights_path=config["d_weights_path"])
 
     trainer.save(config["g_weights_path"], config["d_weights_path"])
+
 if flag == 1 or flag == 2:
     trainer = Trainer(order,
                       1,

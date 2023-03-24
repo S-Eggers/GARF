@@ -1,4 +1,4 @@
-from SeqGAN.models import Generator
+from SeqGAN.generator import Generator
 import numpy as np
 
 class Agent(object):

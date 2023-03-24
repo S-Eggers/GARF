@@ -1,5 +1,7 @@
-from SeqGAN.models import GeneratorPretraining, Discriminator
-from SeqGAN.utils import GeneratorPretrainingGenerator, DiscriminatorGenerator
+from SeqGAN.discriminator import Discriminator
+from SeqGAN.discriminator_generator import DiscriminatorGenerator
+from SeqGAN.generator_pretraining import GeneratorPretraining
+from SeqGAN.generator_pretraining_generator import GeneratorPretrainingGenerator
 from SeqGAN.rl import Agent, Environment
 from keras.optimizers import Adam
 import os
