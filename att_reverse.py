@@ -16,10 +16,11 @@ def att_reverse(path,order):
         data1 = [x[::-1] for x in data1]    # Reverse order
         des = list(cursor.description)
         des.reverse()
-        print(des)
         del des[0]    # Remove the label from the table header
     else:
-        des = cursor.description
+        des = list(cursor.description)
+    
+    print("att_reverse() description:", [item[0] for item in des])
     #print(len(data1))
     # print(type(des))
     # print("Description of the table:", des)
@@ -35,7 +36,7 @@ def att_reverse(path,order):
     dict = {}
     for i in range(t2):
         dict[i] = att_name[i]
-    print(dict)
+    # print(dict)
     # f = open('att_name.txt', 'w')
     f = open('data/save/att_name.txt', 'w')
     f.write(str(dict))

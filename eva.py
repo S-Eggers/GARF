@@ -38,10 +38,10 @@ def evaluate(path_ori, path):
         # sql_info_ori=sql_info
         sql_info_label = sql_info + " and \"Label\"='2'"
         sql2 = "select * from \"" + path_ori + "\" where " + sql_info + ""  # where rownum < 3  #order by "Provider ID" desc
-        print(sql2)
+        # print(sql2)
         cursor.execute(sql2)
         data_ori = cursor.fetchall()
-        print(data_ori)
+        # print(data_ori)
         if data_ori==[]:
             sql_update = "update \"" + path + "\" set \"Label\"='3'  where  " + sql_info + ""
             # print("Original：", sql_info)
